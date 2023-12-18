@@ -10,7 +10,7 @@ The currently available examples are in TypeScript, but since WebSemaphore is a 
 
 For the complete documenation see [WebSemaphore Docs](https://www.websemaphore.com/docs).
 
-If you require samples for your specific stack/language, please open an issue in this repo or [contact us directly](https://www.websemaphore.com/contactus).
+If you require samples for your specific stack/language, please open an issue in this repo or [contact us directly](https://www.websemaphore.com/contact).
 
 
 ## Configuration
@@ -25,7 +25,7 @@ env.ts in the root of the repo is exposing these settings:
 * The websockets api does not include WebSemaphore management. That is, the
   websockets example will not create a semaphore but use the semaphore configured with the id identified by SEMAPHORE_ID.
   For this reason it's preferable to run the https example first. It will create and configure the websemaphore that the websockets example can also use.
-  If you are in an environment that does not allow the https example to work properly such as behind a firewall, you map prefer to create a semaphore at https://www.websemaphore.com/semaphore.
+  If you are in an environment that does not allow the https example to work properly such as behind a firewall, you may prefer to create a semaphore at https://www.websemaphore.com/semaphore.
 * Each example has its own package.json, the reason being to include only relevant
   dependencies for each protocol (see step 2 below).
 

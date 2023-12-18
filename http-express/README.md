@@ -16,7 +16,7 @@ Please note WebSemaphore is not affiliated with ngrok in any way.
 
 1. Clone the repo
 
-   `git clone websemaphore-examples`
+   `git clone broadmindcloud/websemaphore-examples`
 
 2. Change directory to the cloned repo /http directory and install the dependencies:
 
