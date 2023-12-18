@@ -1,4 +1,4 @@
-import { WebSemaphoreHttpClientManager } from "websemaphore";
+import { WebSemaphoreHttpClientManager } from "../../websemaphore";
 import { tunnel } from './ngrok-express';
 import { readFileSync } from 'fs';
 import express from 'express';
@@ -101,11 +101,11 @@ app.get('/processor', async (req: Request, res: Response) => {
     let parsed = tryParse(req.query.message);
     if(parsed.initialTest) 
       console.log(
-        `Test ok\n\n-------\n
-        Server is listening.\n\n
-        To run more manual tests navigate to http://localhost:${env.HTTP_PORT}\n
-        ^C to exit\n
-        -------\n\n`);
+`Test ok\n\n-------\n
+Server is listening.\n\n
+To run more manual tests navigate to http://localhost:${env.HTTP_PORT}\n
+^C to exit\n
+-------\n\n`);
   
   }, time);
 
@@ -142,11 +142,16 @@ const onTunnelConfigured = async (host: string) => {
   try {
     await chainstreamClient.semaphore.upsert({
       id: SEMAPHORE_ID,
-      title: "ngrok demo",
+      title: "websemaphore-examples",
       maxValue: 3,
       isActive: true,
       callback: {
-        onDeliveryError: "drop", isActive: true, address: cb
+        onDeliveryError: "drop", 
+        isActive: true, 
+        address: cb
+      },
+      websockets: {
+        onClientDropped: "drop"
       }
     });
   
