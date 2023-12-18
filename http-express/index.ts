@@ -1,4 +1,4 @@
-import { WebSemaphoreHttpClientManager } from "../../websemaphore";
+import { WebSemaphoreHttpClientManager } from "websemaphore";
 import { tunnel } from './ngrok-express';
 import { readFileSync } from 'fs';
 import express from 'express';
