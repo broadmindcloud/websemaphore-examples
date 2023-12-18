@@ -31,9 +31,9 @@ if(!env.APIKEY) {
   process.exit();
 }
 
-export const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: "ALL" });
+export const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL });
 
-export const chainstreamClient = websemaphoreManager.initialize({ fetch });
+export const chainstreamClient = websemaphoreManager.initialize({ fetch, token: env.APIKEY });
 
 chainstreamClient.setSecurityData({ token: env.APIKEY })
 
