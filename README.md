@@ -14,15 +14,12 @@ If you require samples for your specific stack/language, please open an issue in
 
 
 ## Configuration
-env.ts in the root of the repo is exposing these settings.
+env.ts in the root of the repo is exposing these settings:
 
-APIKEY - (required) put here the key that you can get at https://www.websemaphore.com/semaphore/keys
-
-HTTP_PORT - the port both examples will listen on. Default is 8087.
-
-LOG_LEVEL - set to ALL for verbose logging. Default is empty string.
-
-SEMAPHORE_ID = the websemaphore the example will create websemaphore-example
+* APIKEY - (required) put here the key that you can get at https://www.websemaphore.com/semaphore/keys
+* HTTP_PORT - the port both examples will listen on. Default is 8087.
+* LOG_LEVEL - set to ALL for verbose logging. Default is empty string.
+* SEMAPHORE_ID = the websemaphore the example will create websemaphore-example
 
 ## Important
 * The websockets api does not include WebSemaphore management. That is, the
