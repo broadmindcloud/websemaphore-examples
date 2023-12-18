@@ -91,7 +91,7 @@ app.get('/processor', async (req: Request, res: Response) => {
     clearInterval(int);
     console.log(`Task done, releasing semaphore`);
 
-    const resp = await websemaphoreClient.semaphore.release("test", { channelId: "default" });
+    const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default" });
     console.log(`Release response: ${JSON.stringify(resp.data)}`);
     console.log('Done');
 

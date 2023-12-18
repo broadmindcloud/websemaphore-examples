@@ -1,5 +1,5 @@
-
 import { WebSemaphoreWebsocketsClient } from "websemaphore";
+import * as env from "../../env";
 
 type Logger = typeof console.log;
 
@@ -33,7 +33,7 @@ export const webSocketsSemaphoreTest =
         log(`Acquiring lock with ${JSON.stringify(body)}...`)
         
         const { release, payload, status } =
-            await webSemaphoreClient.acquire({ semaphoreId: "test", sync: false, body: { some: "abstract", data: 10 } });
+            await webSemaphoreClient.acquire({ semaphoreId: env.SEMAPHORE_ID, sync: false, body: { some: "abstract", data: 10 } });
 
         log("Acquired lock...")
 
