@@ -1,4 +1,4 @@
-# Chainstream WebSemaphore http example
+# WebSemaphore http example
 
 ## Description
 

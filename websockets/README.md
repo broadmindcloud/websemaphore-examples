@@ -1,4 +1,4 @@
-# Chainstream WebSemaphore websockets example
+# WebSemaphore websockets example
 
 ## Description
 

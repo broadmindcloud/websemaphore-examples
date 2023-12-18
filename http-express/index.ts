@@ -33,14 +33,14 @@ if(!env.APIKEY) {
 
 export const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL });
 
-export const chainstreamClient = websemaphoreManager.initialize({ fetch, token: env.APIKEY });
+export const websemaphoreClient = websemaphoreManager.initialize({ fetch, token: env.APIKEY });
 
-chainstreamClient.setSecurityData({ token: env.APIKEY })
+websemaphoreClient.setSecurityData({ token: env.APIKEY })
 
 
 const requestSemaphore = async (message?: any) => {
   const msg = { channelId: "default", message: message || "hello semaphore", id: `${Date.now()}${Math.random()}`.replace(/\./g, "-") };
-  const resp = await chainstreamClient.semaphore.acquire(SEMAPHORE_ID, msg as any);
+  const resp = await websemaphoreClient.semaphore.acquire(SEMAPHORE_ID, msg as any);
   stats.inFlight[msg.id] = "waiting";
 
   console.log("Semaphore requested", (resp as any).status, (resp as any).statusText);
@@ -91,7 +91,7 @@ app.get('/processor', async (req: Request, res: Response) => {
     clearInterval(int);
     console.log(`Task done, releasing semaphore`);
 
-    const resp = await chainstreamClient.semaphore.release("test", { channelId: "default" });
+    const resp = await websemaphoreClient.semaphore.release("test", { channelId: "default" });
     console.log(`Release response: ${JSON.stringify(resp.data)}`);
     console.log('Done');
 
@@ -140,7 +140,7 @@ const onTunnelConfigured = async (host: string) => {
   const cb = `${host}/processor`;
   console.log(`Configuring semaphore '${SEMAPHORE_ID}' to callback ${cb}`);
   try {
-    await chainstreamClient.semaphore.upsert({
+    await websemaphoreClient.semaphore.upsert({
       id: SEMAPHORE_ID,
       title: "websemaphore-examples",
       maxValue: 3,
