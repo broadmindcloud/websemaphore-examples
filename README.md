@@ -19,27 +19,29 @@ env.ts in the root of the repo is exposing these settings.
 APIKEY - (required) put here the key that you can get at https://www.websemaphore.com/semaphore/keys
 
 HTTP_PORT - the port both examples will listen on. Default is 8087.
+
 LOG_LEVEL - set to ALL for verbose logging. Default is empty string.
+
 SEMAPHORE_ID = the websemaphore the example will create websemaphore-example
 
 ## Important
-The websockets api does not include WebSemaphore management. That is, the websockets example will not create a semaphore but use the semaphore configured with the id identified by SEMAPHORE_ID.
-
-For this reason it's preferable to run the https example first. It will create and configure the websemaphore that the websockets example can also use.
-If you are in an environment that does not allow the https example to work properly such as behind a firewall, you map prefer to create a semaphore at https://www.websemaphore.com/semaphore.
+* The websockets api does not include WebSemaphore management. That is, the
+  websockets example will not create a semaphore but use the semaphore configured with the id identified by SEMAPHORE_ID.
+  For this reason it's preferable to run the https example first. It will create and configure the websemaphore that the websockets example can also use.
+  If you are in an environment that does not allow the https example to work properly such as behind a firewall, you map prefer to create a semaphore at https://www.websemaphore.com/semaphore.
+* Each example has its own package.json, the reason being to include only relevant
+  dependencies for each protocol (see step 2 below).
 
 ## Usage
 You should have git and npm installed.
 
-Clone this repo
+1. Clone this repo
 
 `
 git clone git@github.com:broadmindcloud/websemaphore-examples.git
 `
 
-Note: Each example has its own package.json, the reason being to include only relevant dependencies for each protocol.
-
-Change directory to the demo you'd like to check and run:
+2. Change directory to the demo you'd like to check and run:
 
 `npm install`
 
