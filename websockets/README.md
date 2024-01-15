@@ -12,19 +12,9 @@ The same technique may be applied using other serverside and serverless framewor
 
    `git clone websemaphore-demos`
 
-2. Change directory to the cloned and install the dependencies 
-
-   `npm install`
-
-3. Configure the API key in ./env.ts. Get a key at [here](https://www.websemaphore.com/semaphore/keys), or see [Configuring API keys](https://www.websemaphore.com/docs/v1/setup/key) for more info.
-
-   Warning: Please note that storing the API Key in code is considered an insecure practice. Use a secrets manager instead.
-
-4. 
-   - Nodejs version `npm run nodejs`
-   - Browser version `npm run browser`
-      - Navigate to http://localhost:8087
-      - In case of a port conflict set the port in env.ts
+2. There are separate implementations for http and websockets. Follow the readme for each protocol:
+- [HTTP Readme](http/README.md)
+- [Websockets Readme](websockets/README.md)
 
 ## See also
 * For more information on asynchronous task invocation check out [Asynchromous WebSemaphore acquisition via a callback](https://www.websemaphore.com/docs/v1/concepts/scenarios#asynchronous-acquisition-via-callback)

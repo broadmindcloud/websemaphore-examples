@@ -8,7 +8,7 @@ import fetch from "node-fetch";
 import * as env from "../env";
 import { processRequest } from "./lib/process";
 import { configureSemaphore } from "./lib/configure-semaphore";
-import { setInFlight, stats } from "./tracking";
+import { setInFlight, stats } from "./lib/tracking";
 
 
 const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL, token: env.APIKEY });

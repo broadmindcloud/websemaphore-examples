@@ -26,11 +26,7 @@ Please note WebSemaphore is not affiliated with ngrok in any way.
 
    Warning: Please note that storing the API Key in code is considered an insecure practice. Use a secrets manager instead.
 
-4. 
-   - Nodejs version `npm run nodejs`
-   - Browser version `npm run browser`
-      - Navigate to http://localhost:8087
-      - In case of a port conflict set the port in env.ts
+4. Start with `npm run start`
 
 5. The example will perform a one-message test and exit. For more interactive see the [http example](../http) or the demos in the websemaphore console.
 

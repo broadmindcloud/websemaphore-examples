@@ -1,7 +1,7 @@
 // here is the place to implement the processing / tracking business logic
 
 import * as env from "../../env";
-import { setComplete, setInFlight } from "../tracking";
+import { setComplete, setInFlight } from "./tracking";
 
 const tryParse = (str: any) => {
     try {
