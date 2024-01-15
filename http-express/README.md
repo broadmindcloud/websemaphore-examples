@@ -27,7 +27,7 @@ The same technique may be applied using other serverside and serverless framewor
 
 4. Start with `npm run start`
 
-5. The example will perform a one-message test and provide a link to a basic test ui.
+5. The example will perform a one-message test and provide a link to a basic test ui at https://localhost:8087 (or another port configured in /env.ts).
 
 ## See also
 * [Systems integration scenarios](https://www.websemaphore.com/docs/v1/concepts/scenarios-integration)
