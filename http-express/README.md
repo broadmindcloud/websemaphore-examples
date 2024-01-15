@@ -30,10 +30,10 @@ The same technique may be applied using other serverside and serverless framewor
 5. The example will perform a one-message test and provide a link to a basic test ui.
 
 ## See also
-* [Asynchromous WebSemaphore acquisition via a callback](https://www.websemaphore.com/docs/v1/concepts/scenarios#asynchronous-acquisition-via-callback)
+* [Systems integration scenarios](https://www.websemaphore.com/docs/v1/concepts/scenarios-integration)
 * [Supported protocols](https://www.websemaphore.com/docs/v1/concepts/protocols)
-* [Async and sync modes](https://www.websemaphore.com/docs/v1/concepts/operating-modes)
-* [WebSemaphore Docs](https://www.websemaphore.com/docs)
+* [Async and sync: operating modes](https://www.websemaphore.com/docs/v1/concepts/operating-modes)
+* [WebSemaphore Docs](https://www.websemaphore.com/docs/v1)
 
 
 ## License
