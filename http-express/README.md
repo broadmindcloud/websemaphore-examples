@@ -10,7 +10,6 @@ The same technique may be applied using other serverside and serverless framewor
 1. To configure a public endpoint, this example is using [localhost.run](https://localhost.run/). It will create a temporary tunnel at a public domain so that WebSemaphore can invoke the processor endpoint (see 3. Usage Scenarios at [integration scenarios](https://www.websemaphore.com/docs/v1/concepts/scenarios-integration#usage-scenarios) in the docs). Ngrok is another option (see env.ts in the repo root).
 2. The demo will then create a WebSemaphore and configure its callback endpoint created in 1.
 3. It will send a test message and await 
-Please note WebSemaphore is not affiliated with ngrok in any way.  
 
 ## Usage
 
