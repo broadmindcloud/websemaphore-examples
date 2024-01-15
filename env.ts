@@ -20,7 +20,7 @@ export const SEMAPHORE_ID = "websemaphore-examples";
 
 /*
     the tunneling provider is only necessary for local demo/testing
-    if you have a proper domain it should be used - see ./configure-semaphore.ts
+    if you have a proper domain it should be used - see ./lib/configure-semaphore.ts
 
     available settings: "localhost.run" and "ngrok"
     localhost.run is the default and will work with no additional setup
