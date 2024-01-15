@@ -7,7 +7,7 @@ The same technique may be applied using other serverside and serverless framewor
 
 
 ## How it works
-1. To configure a public endpoint, this example is using [ngrok](https://ngrok.com/). It will create a temporary tunnel at a public domain so that WebSemaphore can invoke the processor endpoint (see 3. Usage Scenarios at [integration scenarios](https://www.websemaphore.com/docs/v1/concepts/scenarios-integration#usage-scenarios) in the docs). 
+1. To configure a public endpoint, this example is using [ngrok](https://ngrok.com/). It will create a temporary tunnel at a public domain so that WebSemaphore can invoke the processor endpoint (see 3. Usage Scenarios at [integration scenarios](https://www.websemaphore.com/docs/v1/concepts/scenarios-integration#usage-scenarios) in the docs). To use ngrok you need to set the `NGROK_AUTHTOKEN` environment variable to an NGROK api token that you can get on their website. WebSemaphore is not promoting or affiliated with ngrok.
 2. The demo will then create a WebSemaphore and configure its callback endpoint created in 1.
 3. It will send a test message and await 
 Please note WebSemaphore is not affiliated with ngrok in any way.  

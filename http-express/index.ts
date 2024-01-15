@@ -1,47 +1,45 @@
 import { WebSemaphoreHttpClientManager } from "websemaphore";
-import { tunnel } from './ngrok-express';
+import tunnels from './lib/tunnels';
 import { readFileSync } from 'fs';
 import express from 'express';
 import { Request, Response } from 'express';
 
+import fetch from "node-fetch";
+import * as env from "../env";
+import { processRequest } from "./lib/process";
+import { configureSemaphore } from "./lib/configure-semaphore";
+import { setInFlight, stats } from "./tracking";
+
+
+const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL, token: env.APIKEY });
+const websemaphoreClient = websemaphoreManager.initialize({ fetch });
+
+websemaphoreClient.setSecurityData({ token: env.APIKEY })
 
 const app: express.Application = express();
 
 const _orig = console.log.bind(console);
 const log = [] as string[];
 
-const stats = {
-  inFlight: {} as Record<string, string>,
-  history: [] as string[]
-}
 
 console.log = (...args) => {
   _orig(...args);
   log.unshift(new Date().toISOString() + " " + ((args || []) as any[]).join(" "));
 }
 
-import fetch from "node-fetch";
-import * as env from "../env";
-
 const PORT = env.HTTP_PORT;
 const SEMAPHORE_ID = env.SEMAPHORE_ID;
 
-if(!env.APIKEY) {
+if (!env.APIKEY) {
   console.error("API Key is not set. Configure in env.ts; read more at https://www.websemaphore.com/docs/v1/setup/key");
   process.exit();
 }
 
-export const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL });
-
-export const websemaphoreClient = websemaphoreManager.initialize({ fetch, token: env.APIKEY });
-
-websemaphoreClient.setSecurityData({ token: env.APIKEY })
-
-
 const requestSemaphore = async (message?: any) => {
   const msg = { channelId: "default", message: message || "hello semaphore", id: `${Date.now()}${Math.random()}`.replace(/\./g, "-") };
   const resp = await websemaphoreClient.semaphore.acquire(SEMAPHORE_ID, msg as any);
-  stats.inFlight[msg.id] = "waiting";
+  
+  setInFlight(msg)
 
   console.log("Semaphore requested", (resp as any).status, (resp as any).statusText);
 
@@ -49,7 +47,6 @@ const requestSemaphore = async (message?: any) => {
 }
 
 app.get('/init', async (req: Request, res: Response) => {
-  // res.send('Task initiated');
   try {
     await requestSemaphore();
   } catch (ex) {
@@ -60,60 +57,20 @@ app.get('/init', async (req: Request, res: Response) => {
   res.redirect("/");
 });
 
-const tryParse = (str: any) => {
-  try {
-    return JSON.parse(str);
-  } catch {
-    return str;
-  }
-}
 
 app.get('/processor', async (req: Request, res: Response) => {
-  console.log("Acquired lock", JSON.stringify(req.query))
+  console.log("Acquired lock", JSON.stringify(req.query));
 
-  const time = 2000 + Math.random() * 8000;
-  const startTime = Date.now();
-  const niceTime = Math.round(time / 10) / 100;
-  const msgId = req.query.id as string;
-  stats.inFlight[msgId] = `processing, remaining ${niceTime} out of ${niceTime} seconds`;
-
-  const int = setInterval(() => {
-    const elapsed = Date.now() - startTime;
-    const niceLeft = Math.round((time - elapsed) / 10) / 100;
-
-    stats.inFlight[msgId] = `processing, remaining ${niceLeft} out of ${niceTime} seconds`;
-  }, 1000);
-
-  console.log(`Task processing for ${niceTime} seconds`);
-
-  // operation on limited resource
-  setTimeout(async () => {
-    clearInterval(int);
-    console.log(`Task done, releasing semaphore`);
+  (async () => {
+    await processRequest(req.query);
 
     const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default" });
     console.log(`Release response: ${JSON.stringify(resp.data)}`);
     console.log('Done');
-
-    stats.history.unshift(msgId)
-    delete stats.inFlight[msgId];
-
-    let parsed = tryParse(req.query.message);
-    if(parsed.initialTest) 
-      console.log(
-`Test ok\n\n-------\n
-Server is listening.\n\n
-To run more manual tests navigate to http://localhost:${env.HTTP_PORT}\n
-^C to exit\n
--------\n\n`);
-  
-  }, time);
+  })();
 
   res.send("Ok")
-
-
 });
-
 
 app.get('/', async (req: Request, res: Response) => {
   const index = readFileSync("./pages/index.html").toString();
@@ -136,46 +93,37 @@ app.get('/stats', async (req: Request, res: Response) => {
   res.send(JSON.stringify(stats || "", null, "\t"));
 });
 
-const onTunnelConfigured = async (host: string) => {
-  const cb = `${host}/processor`;
-  console.log(`Configuring semaphore '${SEMAPHORE_ID}' to callback ${cb}`);
-  try {
-    await websemaphoreClient.semaphore.upsert({
-      id: SEMAPHORE_ID,
-      title: "websemaphore-examples",
-      maxValue: 3,
-      isActive: true,
-      callback: {
-        onDeliveryError: "drop", 
-        isActive: true, 
-        address: cb
-      },
-      websockets: {
-        onClientDropped: "drop"
-      }
-    });
+const main = async () => {
+  const tunnel = await tunnels[env.TUNNELING_PROVIDER](app, env.HTTP_PORT);
   
+  console.log("connected, configuring semaphore...")
+  
+  const callback = `${tunnel.host}/processor`;
+  const websemaphoreConfig = configureSemaphore(callback)
+
+  try {
+    await websemaphoreClient.semaphore.upsert(websemaphoreConfig);
+
   } catch (ex) {
     console.error(ex);
   }
-  console.log(`Semaphore '${SEMAPHORE_ID}' configured to callback ${cb}`);
-  console.log(`Check the semaphore online: https://www.websemaphore.com/semaphore/${SEMAPHORE_ID}`);
 
+  await configureSemaphore(`${tunnel.host}/processor`)
+
+  console.log(`Semaphore '${SEMAPHORE_ID}' configured to callback ${callback}`);
   console.log(`Testing with one message. Wait a few seconds or see the web ui at http://localhost:${PORT}`);
 
   try {
-  await requestSemaphore(JSON.stringify({ initialTest: true }));
+    // run initial test
+    await requestSemaphore(JSON.stringify({ initialTest: true }));
   } catch (ex) {
     console.log((ex as any).message, ex)
   }
+  
+  tunnel.app.listen(env.HTTP_PORT);
 }
 
-
-tunnel(app, onTunnelConfigured)
-  .listen(env.HTTP_PORT, async () => {
-
-  });
-
+main()
 
 process.on('SIGINT', () => {
   console.log("\nGoodbye");

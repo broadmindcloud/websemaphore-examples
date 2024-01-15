@@ -1,11 +1,8 @@
 import { Application } from "express";
 
-const express = require("express");
 const ngrok = require("@ngrok/ngrok");
-// const app = express();
 
-
-export async function tunnelViaNgrok(app: Express.Application, onConnect?: (tunnelUrl: string, app: Express.Application) => void) {
+export async function tunnelViaNgrok(app: Application) {
     // create session
     const session = await new ngrok.NgrokSessionBuilder()
         .authtokenFromEnv()
@@ -23,12 +20,9 @@ export async function tunnelViaNgrok(app: Express.Application, onConnect?: (tunn
     console.log(`Ingress established at: ${tunnel.url()}`);
     console.log(`Express listening on: ${socket.address()}`);
 
-    onConnect && onConnect(tunnel.url(), app);
-
-    return app;
+    return { app, host: tunnel.url() };
 }
 
-export const tunnel = (app: Application, onConnect: (tunnelUrl: string, app: Express.Application) => void) => {
-    tunnelViaNgrok(app, onConnect);
-    return app;
+export const tunnel = (app: Application, _port: number) => {
+    return tunnelViaNgrok(app);
 }

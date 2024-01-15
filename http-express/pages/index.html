@@ -1,0 +1,103 @@
+<html>
+
+<head>
+    <title>WebSemaphore demo</title>
+</head>
+<style>
+    body {
+        font-family: sans-serif;
+    }
+
+    #main {
+        min-height: calc(90svh - 20px)
+    }
+
+    .logo {
+        height: 20px;
+        width: 20px;
+        border: 8px darkorange solid;
+        border-radius: 30px;
+        margin-top: 3px;
+    }
+
+    .heading {
+        display: flex;
+        flex-direction: row;
+        gap: 6px;
+    }
+    .heading  h2 {
+        margin: 0;
+        font-weight: normal;
+    }
+
+    hr {
+        border-top: none;
+        border-bottom: 1px solid darkgrey;
+        margin-bottom: 1em;
+    }
+</style>
+
+<body>
+    <div id="main">
+        <div class="heading">
+            <div class="logo"></div>
+            <div>
+                <small>Chainstream</small> 
+                <h2>
+                    WebSemaphore
+                </h2>
+                <br />
+            </div>
+        </div>
+        <hr />
+        <h3>Async call over https demo</h3>
+        This <a href="https://www.websemaphore.com" target="_blank">Websemaphore</a> demo is emulating an
+        <a href="https://www.websemaphore.com/docs/v1/concepts/scenarios#asynchronous-acquisition-via-callback"
+            target="_blank">
+            asynchronous semaphore acquisition via an HTTP callback
+        </a>.
+        <br />
+        <hr />
+        <br />
+        <button onclick="fetch('/init')">send message</button> <a href='exit'>shutdown server</a>
+        <br /><br />
+        <h3>Stats</h3>
+        <pre id='stats'> </pre>
+        <h3>Log</h3>
+        <pre id='log'> </pre>
+    </div>
+    <script>
+        let cached = {
+            log: "",
+            stats: ""
+        }
+        const els = {
+            log: document.querySelector('#log'),
+            stats: document.querySelector('#stats')
+        }
+
+        const getLog = async (what) => {
+            const r = await fetch("/" + what);
+            const l = await r.text();
+            if (l != stats[what]) {
+                els[what].innerHTML = stats[what] = l;
+            }
+        }
+
+        setInterval(async () => {
+            getLog("log");
+            getLog("stats");
+        }, 500);
+    </script>
+    <div style="margin: 20px 10px">
+        &copy; 2019-2023
+        &nbsp;
+        <img alt="Broadmind Cloud Technologies Logo" className="ant-image-img"
+            src="https://velocity.broadmind.eu/broadmind-logo-only.png" height="1em"
+            style="height: 1em; margin-bottom: -2px;" />
+        &nbsp;
+        <a href="https://www.broadmind.eu" target="_blank">Broadmind Cloud Technologies</a>
+    </div>
+</body>
+
+</html>
