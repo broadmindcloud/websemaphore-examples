@@ -31,11 +31,11 @@ export const processRequest = (msg: any) => {
     // operation on limited resource
     setTimeout(async () => {
         clearInterval(int);
-        console.log(`Task done, releasing semaphore`);
+        console.log(`Task done, releasing semaphore:`, msg);
 
         setComplete(msg)
-
-        let parsed = tryParse(msg.message);
+        console.log(`released semaphore`);
+        let parsed = tryParse(msg.queryString);
         if (parsed.initialTest)
             console.log(
                 `Test ok\n\n-------\n

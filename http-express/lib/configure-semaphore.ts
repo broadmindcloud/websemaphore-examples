@@ -3,7 +3,7 @@ import * as env from "../../env";
 const { SEMAPHORE_ID } = env;
 
 export const configureSemaphore = (callback: string) => {
-    console.log(`Configuring semaphore '${SEMAPHORE_ID}' to callback ${callback}`);
+    console.log(`... inside configuring semaphore '${SEMAPHORE_ID}' to callback ${callback}`);
 
     const config = {
         id: SEMAPHORE_ID,

@@ -3,12 +3,15 @@ import tunnels from './lib/tunnels';
 import { readFileSync } from 'fs';
 import express from 'express';
 import { Request, Response } from 'express';
+import { tunnel as lhr } from "./lib/tunnels/localhost-run-express";
 
 import fetch from "node-fetch";
 import * as env from "../env";
 import { processRequest } from "./lib/process";
 import { configureSemaphore } from "./lib/configure-semaphore";
 import { setInFlight, stats } from "./lib/tracking";
+import { isLeftHandSideExpression } from "typescript";
+import { error } from "console";
 
 
 const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL, token: env.APIKEY });
@@ -27,7 +30,8 @@ console.log = (...args) => {
   log.unshift(new Date().toISOString() + " " + ((args || []) as any[]).join(" "));
 }
 
-const PORT = env.HTTP_PORT;
+//const PORT = env.HTTP_PORT;
+const PORT = 5000;
 const SEMAPHORE_ID = env.SEMAPHORE_ID;
 
 if (!env.APIKEY) {
@@ -46,69 +50,87 @@ const requestSemaphore = async (message?: any) => {
   return resp;
 }
 
-app.get('/init', async (req: Request, res: Response) => {
-  try {
-    await requestSemaphore();
-  } catch (ex) {
-    const err = await (ex as any).text();
-    console.log(`Error: ${(ex as any).status} ${err}`);
-  }
+const requestUser = async (message?: any) => {
+  const msg = { channelId: "default", message: message || "hello semaphore", id: `${Date.now()}${Math.random()}`.replace(/\./g, "-") };
+  const resp = await websemaphoreClient.user.current()
+  setInFlight(msg)
 
-  res.redirect("/");
-});
+  console.log("User requested", (resp as any).status, (resp as any).statusText);
 
+  return resp;
+}
 
-app.get('/processor', async (req: Request, res: Response) => {
-  console.log("Acquired lock", JSON.stringify(req.query));
+function setupRoutes (app: any) {
 
-  (async () => {
-    await processRequest(req.query);
+    app.get('/init', async (req: Request, res: Response) => {
+      try {
+        await requestSemaphore();
+      } catch (ex) {
+        const err = await (ex as any).text();
+        console.log(`Error: ${(ex as any).status} ${err}`);
+      }
 
-    const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default" });
-    console.log(`Release response: ${JSON.stringify(resp.data)}`);
-    console.log('Done');
-  })();
+      res.redirect("/");
+    });
 
-  res.send("Ok")
-});
+    
+    app.get('/', async (req: Request, res: Response) => {
+      const index = readFileSync("./pages/index.html").toString();
+      res.send(index);
+      console.log('Root route hit');
+    });
 
-app.get('/', async (req: Request, res: Response) => {
-  const index = readFileSync("./pages/index.html").toString();
+    app.get('/processor', async (req: Request, res: Response) => {
+      console.log("Acquired lock", JSON.stringify(req.query));
 
-  res.send(index);
-});
+      (async () => {
+        await processRequest(req.query);
 
-app.get('/exit', async (req: Request, res: Response) => {
-  res.redirect("/");
-  setTimeout(() => {
-    process.exit();
-  }, 500);
-});
+        const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default" });
+        console.log(`Release response: ${JSON.stringify(resp.data)}`);
+        console.log('Done');
+      })();
+      res.send("Ok")
+    });
 
-app.get('/log', async (req: Request, res: Response) => {
-  res.send(log.join("\n"));
-});
+    app.get('/exit', async (req: Request, res: Response) => {
+      res.redirect("/");
+      setTimeout(() => {
+        process.exit();
+      }, 500);
+    });
 
-app.get('/stats', async (req: Request, res: Response) => {
-  res.send(JSON.stringify(stats || "", null, "\t"));
-});
+    app.get('/log', async (req: Request, res: Response) => {
+      res.send(log.join("\n"));
+    });
+
+    app.get('/stats', async (req: Request, res: Response) => {
+      res.send(JSON.stringify(stats || "", null, "\t"));
+    });
+
+}
+  
+let staticVar = 0;
 
 const main = async () => {
-  const tunnel = await tunnels[env.TUNNELING_PROVIDER](app, env.HTTP_PORT);
-  
-  console.log("connected, configuring semaphore...")
-  
+
+  //const tunnel = await tunnels[env.TUNNELING_PROVIDER](app, env.HTTP_PORT);
+  const app = express();  
+  setupRoutes(app);
+  const tunnel = await lhr(app, env.HTTP_PORT);
+ 
+
+  console.log("connected, configuring semaphore..." + tunnel.host );
   const callback = `${tunnel.host}/processor`;
+  console.log("callback: " + callback);
   const websemaphoreConfig = configureSemaphore(callback)
 
-  try {
+  // type try catch block to catch error  and log it  if staticVar is greater than 0  
+  try {    
     await websemaphoreClient.semaphore.upsert(websemaphoreConfig);
-
   } catch (ex) {
-    console.error(ex);
+    console.error("Error occurred:", ex);
   }
-
-  await configureSemaphore(`${tunnel.host}/processor`)
 
   console.log(`Semaphore '${SEMAPHORE_ID}' configured to callback ${callback}`);
   console.log(`Testing with one message. Wait a few seconds or see the web ui at http://localhost:${PORT}`);
@@ -120,7 +142,9 @@ const main = async () => {
     console.log((ex as any).message, ex)
   }
   
-  tunnel.app.listen(env.HTTP_PORT);
+  tunnel.app.listen(env.HTTP_PORT, "0.0.0.0");
+  console.log(`Server is listening on http://localhost:${env.HTTP_PORT}`);
+
 }
 
 main()
