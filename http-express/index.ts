@@ -119,7 +119,6 @@ const main = async () => {
   setupRoutes(app);
   const tunnel = await lhr(app, env.HTTP_PORT);
  
-
   console.log("connected, configuring semaphore..." + tunnel.host );
   const callback = `${tunnel.host}/processor`;
   console.log("callback: " + callback);
@@ -144,6 +143,10 @@ const main = async () => {
   
   tunnel.app.listen(env.HTTP_PORT, "0.0.0.0");
   console.log(`Server is listening on http://localhost:${env.HTTP_PORT}`);
+
+  try {
+    await requestUser();
+  }
 
 }
 
