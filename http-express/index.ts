@@ -13,9 +13,18 @@ import { setInFlight, stats } from "./lib/tracking";
 import { isLeftHandSideExpression } from "typescript";
 import { error } from "console";
 
+const ENDPOINTS = {
+  dev: 'https://api-dev.websemaphore.com',
+  prod: 'https://api.websemaphore.com'
+};
 
-const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL, token: env.APIKEY });
-const websemaphoreClient = websemaphoreManager.initialize({ fetch });
+const websemaphoreManager = WebSemaphoreHttpClientManager(
+    { 
+      logLevel: env.LOG_LEVEL, 
+      token: env.APIKEY 
+    }
+  );
+const websemaphoreClient = websemaphoreManager.initialize({ baseUrl: "dev", fetch: fetch });
 
 websemaphoreClient.setSecurityData({ token: env.APIKEY })
 
@@ -46,16 +55,6 @@ const requestSemaphore = async (message?: any) => {
   setInFlight(msg)
 
   console.log("Semaphore requested", (resp as any).status, (resp as any).statusText);
-
-  return resp;
-}
-
-const requestUser = async (message?: any) => {
-  const msg = { channelId: "default", message: message || "hello semaphore", id: `${Date.now()}${Math.random()}`.replace(/\./g, "-") };
-  const resp = await websemaphoreClient.user.current()
-  setInFlight(msg)
-
-  console.log("User requested", (resp as any).status, (resp as any).statusText);
 
   return resp;
 }
@@ -138,16 +137,25 @@ const main = async () => {
     // run initial test
     await requestSemaphore(JSON.stringify({ initialTest: true }));
   } catch (ex) {
-    console.log((ex as any).message, ex)
+    console.log((ex as any).message, ex);
   }
   
   tunnel.app.listen(env.HTTP_PORT, "0.0.0.0");
   console.log(`Server is listening on http://localhost:${env.HTTP_PORT}`);
 
   try {
-    await requestUser();
+    const resp = await websemaphoreClient.user.current();
+    console.log(`user:`, resp.data);
+  } catch (ex) {
+    console.log((ex as any).message, ex)
   }
 
+  try {
+    const resp = await websemaphoreClient.user.update({ lastName: "VRX"});
+    console.log(`user update resp: `, resp.data);
+  }catch (ex) {
+    console.log((ex as any).message, ex)
+  }
 }
 
 main()

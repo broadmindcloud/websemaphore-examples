@@ -1,3 +1,9 @@
 node_modules
 .env
 *.sock
+env.ts
+http-express/dist
+websockets/package-lock.json
+http-express/pnpm-lock.yaml
+
+http-express/package-lock.json
