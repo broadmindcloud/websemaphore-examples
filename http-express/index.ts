@@ -4,15 +4,46 @@ import { readFileSync } from 'fs';
 import express from 'express';
 import { Request, Response } from 'express';
 
-import fetch from "node-fetch";
+// import fetch from "node-fetch";
 import * as env from "../env";
 import { processRequest } from "./lib/process";
 import { configureSemaphore } from "./lib/configure-semaphore";
 import { setInFlight, stats } from "./lib/tracking";
 
+debugger;
 
-const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL, token: env.APIKEY });
-const websemaphoreClient = websemaphoreManager.initialize({ fetch });
+// const l = console.log;
+// console.log = (...args) => {
+//   l(new Error().stack, ...args);
+// }
+
+const _fetch: typeof fetch = async (url: RequestInfo | URL, opts?: RequestInit) => {
+  const res = await fetch(url, opts);
+
+  console.log("*".repeat(10), url)
+  console.log(url)
+  console.log(JSON.stringify(opts?.headers))
+  console.log("body:", JSON.stringify(opts?.body));
+  console.log("res:", await res.text())
+  console.log("res headers:\n", Array.from(res.headers.entries()).join("\n"));
+  console.log("*".repeat(10))
+  // console.log("Headers:", res.headers);
+
+  debugger;
+  // if((url as string).endsWith("semaphore")) {
+  //   console.log(res.headers)
+  //   console.log(url, opts);
+  //   console.log(res.status, res.statusText);
+  //   console.log(await res.text());
+  //   // process.exit();
+  // }
+  return res as any as ReturnType<typeof fetch>;
+};
+
+// const _fetch = cf;
+
+const websemaphoreManager = WebSemaphoreHttpClientManager({ logLevel: env.LOG_LEVEL, token: env.APIKEY, fetch: _fetch });
+const websemaphoreClient = websemaphoreManager.initialize({ fetch: _fetch, baseUrl: "us-dev" }); //"https://us-dev.websemaphore.com" });
 
 websemaphoreClient.setSecurityData({ token: env.APIKEY })
 
@@ -38,8 +69,8 @@ if (!env.APIKEY) {
 const requestSemaphore = async (message?: any) => {
   const msg = { channelId: "default", message: message || "hello semaphore", id: `${Date.now()}${Math.random()}`.replace(/\./g, "-") };
   const resp = await websemaphoreClient.semaphore.acquire(SEMAPHORE_ID, msg as any);
-  
-  setInFlight(msg)
+
+  setInFlight(msg);
 
   console.log("Semaphore requested", (resp as any).status, (resp as any).statusText);
 
@@ -48,7 +79,7 @@ const requestSemaphore = async (message?: any) => {
 
 app.get('/init', async (req: Request, res: Response) => {
   try {
-    await requestSemaphore();
+    await requestSemaphore({ initialTest: true });
   } catch (ex) {
     const err = await (ex as any).text();
     console.log(`Error: ${(ex as any).status} ${err}`);
@@ -60,13 +91,22 @@ app.get('/init', async (req: Request, res: Response) => {
 
 app.get('/processor', async (req: Request, res: Response) => {
   console.log("Acquired lock", JSON.stringify(req.query));
+  console.log("Acquired lock, headers", JSON.stringify(req.headers));
+
+  const jobCrn = req.headers["x-chainstream-job-crn"];
 
   (async () => {
     await processRequest(req.query);
 
-    const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default" });
-    console.log(`Release response: ${JSON.stringify(resp.data)}`);
-    console.log('Done');
+    try {
+      const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default", jobCrn } as any);
+      // console.log(`Release response: ${JSON.stringify(resp?.data)}`);
+      console.log('Done');
+    } catch (ex) {
+      console.log("Couldn't release semaphore: ", (ex as any)?.error?.message)
+    }
+    console.log("Above attempted to release job", jobCrn);
+
   })();
 
   res.send("Ok")
@@ -95,9 +135,9 @@ app.get('/stats', async (req: Request, res: Response) => {
 
 const main = async () => {
   const tunnel = await tunnels[env.TUNNELING_PROVIDER](app, env.HTTP_PORT);
-  
+
   console.log("connected, configuring semaphore...")
-  
+
   const callback = `${tunnel.host}/processor`;
   const websemaphoreConfig = configureSemaphore(callback)
 
@@ -117,9 +157,9 @@ const main = async () => {
     // run initial test
     await requestSemaphore(JSON.stringify({ initialTest: true }));
   } catch (ex) {
-    console.log((ex as any).message, ex)
+    console.log((ex as any).message, (ex as any).status)
   }
-  
+
   tunnel.app.listen(env.HTTP_PORT);
 }
 

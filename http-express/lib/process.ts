@@ -1,6 +1,7 @@
 // here is the place to implement the processing / tracking business logic
 
 import * as env from "../../env";
+import { config } from "./configure-semaphore";
 import { setComplete, setInFlight } from "./tracking";
 
 const tryParse = (str: any) => {
@@ -12,7 +13,7 @@ const tryParse = (str: any) => {
 }
 
 export const processRequest = (msg: any) => {
-    const time = 2000 + Math.random() * 8000;
+    const time = config.timeout.value + Math.round((Math.random() * 10000 - 7000)) //2 * 60 * 1000 + Math.random() * 8000;
     const startTime = Date.now();
     const niceTime = Math.round(time / 10) / 100;
     const msgId = msg.id as string;
@@ -28,22 +29,31 @@ export const processRequest = (msg: any) => {
 
     console.log(`Task processing for ${niceTime} seconds`);
 
+    debugger;
+
     // operation on limited resource
-    setTimeout(async () => {
-        clearInterval(int);
-        console.log(`Task done, releasing semaphore`);
 
-        setComplete(msg)
+    return new Promise(res => {
 
-        let parsed = tryParse(msg.message);
-        if (parsed.initialTest)
-            console.log(
-                `Test ok\n\n-------\n
-  Server is listening.\n\n
-  To run more manual tests navigate to http://localhost:${env.HTTP_PORT}\n
-  ^C to exit\n
-  -------\n\n`);
+        setTimeout(async () => {
+            clearInterval(int);
+            console.log(`Task done, releasing semaphore`);
 
-    }, time);
+            setComplete(msg)
+            console.log("Message:", JSON.stringify(msg.body))
+            let parsed = tryParse(msg.message);
+            if (parsed.initialTest)
+                console.log(
+                    `Test ok\n\n-------\n
+      Server is listening.\n\n
+      To run more manual tests navigate to http://localhost:${env.HTTP_PORT}\n
+      ^C to exit\n
+      -------\n\n`);
+
+            res({});
+
+        }, time);
+
+    })
 
 }
