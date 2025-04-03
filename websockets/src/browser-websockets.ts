@@ -1,4 +1,4 @@
-import { WebSemaphoreWebsocketsClientManager } from "websemaphore";
+import { WebSemaphoreWebsocketsClientManager } from "websemaphore/src";
 import { webSocketsSemaphoreTest } from "./shared";
 import * as env from "../../env";
 

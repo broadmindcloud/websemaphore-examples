@@ -2,7 +2,11 @@
     get a key at https://www.websemaphore.com/semaphore/keys
 */
 // export const APIKEY = "ApiKey 59dab9afc97d4f0cc3a3089f8f6cf412"; // 
-export const APIKEY = "ApiKey bf5a76919f9d1b88cfc0159942c4171b";
+// export const APIKEY = "ApiKey bf5a76919f9d1b88cfc0159942c4171b";
+export const APIKEY_WORKER = "ApiKey a7208899d2e0ee51eeac8d67ce9a4cd6"; // a "worker" key
+export const APIKEY_ADMIN = "ApiKey bf5a76919f9d1b88cfc0159942c4171b"; // an "admin" key
+
+export const APIKEY = APIKEY_ADMIN;
 
 /*
     supported regions: eu, us
@@ -22,7 +26,7 @@ export const LOG_LEVEL = "";
 /*
     use another semaphore id
 */
-export const SEMAPHORE_ID = "VGVzdCBTZW1hcGhvcmUtMTc0MDY4ODg5MzI0Mg==";
+export const SEMAPHORE_ID = "test-semaphore";
 
 /*
     the tunneling provider is only necessary for local demo/testing

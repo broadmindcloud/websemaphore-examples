@@ -89,7 +89,7 @@ app.get('/init', async (req: Request, res: Response) => {
 });
 
 
-app.get('/processor', async (req: Request, res: Response) => {
+app.post('/processor', async (req: Request, res: Response) => {
   console.log("Acquired lock", JSON.stringify(req.query));
   console.log("Acquired lock, headers", JSON.stringify(req.headers));
 

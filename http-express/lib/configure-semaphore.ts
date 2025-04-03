@@ -17,7 +17,7 @@ export const config = {
     onClientDropped: "drop"
   },
   timeout: {
-    value: 28 * 1000
+    value: 10 * 1000
   }
 }
 

@@ -13,7 +13,7 @@ const tryParse = (str: any) => {
 }
 
 export const processRequest = (msg: any) => {
-    const time = config.timeout.value + Math.round((Math.random() * 10000 - 7000)) //2 * 60 * 1000 + Math.random() * 8000;
+    const time = (config?.timeout?.value || 5000)  + Math.round((Math.random() * 10000 - 7000)) //2 * 60 * 1000 + Math.random() * 8000;
     const startTime = Date.now();
     const niceTime = Math.round(time / 10) / 100;
     const msgId = msg.id as string;
@@ -40,9 +40,10 @@ export const processRequest = (msg: any) => {
             console.log(`Task done, releasing semaphore`);
 
             setComplete(msg)
-            console.log("Message:", JSON.stringify(msg.body))
+            console.log("Message:", JSON.stringify(msg))
             let parsed = tryParse(msg.message);
-            if (parsed.initialTest)
+            if (parsed?.initialTest || true)
+                console.log("NOTE THE TEMPORARY MEASURES")
                 console.log(
                     `Test ok\n\n-------\n
       Server is listening.\n\n
