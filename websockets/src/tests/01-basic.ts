@@ -5,7 +5,8 @@ import * as env from "../../../env";
 export const webSocketsSemaphoreTest =
     async (
         webSemaphoreClient: WebSemaphoreWebsocketsClient,
-        log?: Logger
+        log: Logger | undefined = undefined,
+        executionTime: number = -1
     ) => {
         log = log || console.log;
 
@@ -22,7 +23,7 @@ export const webSocketsSemaphoreTest =
 
         if (status == "acquired") { // always true in async mode
             // do work
-            await process(payload, log);
+            await process(payload, log, executionTime);
         } else {
             log(status);
         }
@@ -31,7 +32,7 @@ export const webSocketsSemaphoreTest =
 
         release();
 
-        return jobCrn;
+        return { jobCrn, payload };
     }
 
 export default webSocketsSemaphoreTest;

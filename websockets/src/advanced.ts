@@ -1,9 +1,10 @@
 import { WebSocket } from "ws";
 import { WebSemaphoreWebsocketsClientManager, WebSemaphoreHttpClientManager, WebsemaphoreHttpClient } from "websemaphore/src";
 import * as env from "../../env";
-import { assert } from "console";
+import { assert, time } from "console";
 import { SemaphoreReadResponse, SemaphoreUpsertRequest } from "websemaphore";
 import _01_testBasic from "./tests/01-basic";
+import { SemaphoreJob } from "websemaphore/src/types";
 // import { SemaphoreJob } from "websemaphore/src/types";
 
 const stage = "us-dev"; // environment stage (e.g., development, staging, production)
@@ -85,7 +86,7 @@ const advanced = async () => {
 
     assert(timedOutJob.status == "timeout");
 
-    await httpClient.semaphore.readJob(testSemaphore.id!, { crn: timedOutJob.crn })
+    // await httpClient.semaphore.readJob(testSemaphore.id!, { crn: timedOutJob.crn })
 
     // --------- RESCHEDULE TEST
 
@@ -106,24 +107,41 @@ const advanced = async () => {
 
     const queueItems = (await httpClient.semaphore.readQueue(testSemaphore.id!, { status: "scheduled" })).data;
 
-    console.log("Before waiting", { queueItems });
+    
+    console.log("Items in queue before activation", queueItems.Items); // ?.map(qi => qi.crn)
 
     const arrivals = [] as { jobCrn: string, release: () => Promise<any> }[];
 
     laterJobPromise.then(({ jobCrn, release }: { jobCrn: string, release: () => Promise<any> }) => arrivals.push({ jobCrn, release }));
     rescheduledJobPromise.then(({ jobCrn, release }: { jobCrn: string, release: () => Promise<any> }) => arrivals.push({ jobCrn, release }));
 
-    console.log("Activating")
+    console.log("Activating");
     const activateResponse = await httpClient.semaphore.activate(testSemaphore.id!, { channelId: "default" }); //({ id: testSemaphore.id, isActive: true });
 
-    console.log(activateResponse.data)
+    console.log(activateResponse.data);
 
-    await Promise.all([laterJobPromise, rescheduledJobPromise]);
+    const firstSettledJobResponse = await Promise.race([laterJobPromise, rescheduledJobPromise]);
 
-    console.log("Rescheduled job crn:", timedOutJobCrn)
-    console.log(arrivals.map(r => r.jobCrn));
+    const firstSettledJob = SemaphoreJob.fromCrn(firstSettledJobResponse.jobCrn);
 
-    Promise.all([
+    // console.log({ firstSettledCrn })
+    // assert(
+    //     timedOutJob.crn == firstSettledJob.clone("timeout").crn,
+    //     `First job reseased was\n${firstSettledJob.clone("timeout").crn}, expected\n${timedOutJob.crn}`
+    // );
+    console.log(`First job reseased was\n${firstSettledJob.crn}, expected\n${timedOutJob.crn}`);
+    
+    console.log("Awaiting second job promise")
+
+    const laterJob = await rescheduledJobPromise;//Promise.race([laterJobPromise, rescheduledJobPromise]);
+    
+    console.log({ laterJob });
+
+
+    // console.log("Rescheduled job crn:", timedOutJobCrn)
+    console.log("Releasing jobs:", arrivals.map(j => j.jobCrn));
+
+    await Promise.all([
         arrivals[0].release(),
         arrivals[1].release()
     ]);
