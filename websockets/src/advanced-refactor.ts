@@ -234,7 +234,7 @@ const TESTS: Record<string, (...p: Parameters<typeof basicTest>) => any> = {
 const main = async () => {
     const config = await setup();
 
-    const tests = { cancelTest }; //TESTS
+    const tests = TESTS
 
     console.time("Total test time")
     try {
