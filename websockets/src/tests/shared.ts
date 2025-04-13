@@ -1,6 +1,17 @@
-export type Logger = typeof console.log;
+import { SemaphoreUpsertRequest, WebsemaphoreHttpClient } from "websemaphore/src";
+import * as env from "../../../env";
+import { WebsocketsClientManager } from "websemaphore/src/clients/websockets/manager";
+export { env };
 
-export const process = async (payload: any, log: Logger, executionTime?: number) => {
+export const log = console.log;
+
+export type WebSemaphoreTestParams = {
+    httpClient: WebsemaphoreHttpClient;
+    wsClientManager: WebsocketsClientManager;
+    testSemaphore: any;
+};
+
+export const _process = async (payload: any, executionTime?: number) => {
     // do work
     let workDuration = executionTime! > 0 ? executionTime : Math.round(5 + 5 * Math.random());
 
@@ -15,3 +26,28 @@ export const process = async (payload: any, log: Logger, executionTime?: number)
 
     log("Processing done")
 }
+
+
+export const panic = (bool: boolean, message: string) => {
+    if (!bool) {
+        console.error(new Error(message));
+        global.process.exit();
+    }
+}
+
+const stage = "us-dev"; // environment stage (e.g., development, staging, production)
+const TEST_SEMAPHORE_ID = env.SEMAPHORE_ID; // semaphore ID from environment variables
+
+export const upsertSemaphore = async (client: WebsemaphoreHttpClient, extraConfig?: Partial<SemaphoreUpsertRequest>) => {
+    return (await client.semaphore.upsert({
+        id: TEST_SEMAPHORE_ID,
+        websockets: {
+            isActive: true,
+            onClientDropped: "drop"
+        },
+        maxValue: 3,
+        isActive: true,
+        timeout: {},
+        ...(extraConfig || {})
+    })).data;
+};

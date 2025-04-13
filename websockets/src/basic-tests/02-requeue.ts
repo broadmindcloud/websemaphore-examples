@@ -1,6 +1,6 @@
 import { WebSemaphoreWebsocketsClient } from "websemaphore/src";
 import basic01 from "./01-basic";
-import { Logger } from "./shared";
+import { Logger } from "../tests/shared";
 
 const requeue = async (jobCrn: string, webSemaphoreClient: WebSemaphoreWebsocketsClient, log?: Logger) => {
     await new Promise((r) => setTimeout(r, 3000));

@@ -3,7 +3,7 @@ import { WebSocket } from "ws";
 import { WebSemaphoreWebsocketsClientManager, WebSemaphoreHttpClientManager, WebsemaphoreHttpClient } from "websemaphore/src";
 import * as env from "../../env";
 import { SemaphoreReadResponse, SemaphoreUpsertRequest } from "websemaphore";
-import _01_testBasic from "../src/tests/01-basic";
+import _01_testBasic from "../src/basic-tests/01-basic";
 import { SemaphoreJob } from "websemaphore/src/types";
 
 const panic = (bool: boolean, message: string) => {

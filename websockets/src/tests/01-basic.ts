@@ -1,38 +1,41 @@
-import { WebSemaphoreWebsocketsClient } from "websemaphore/src";
-import { process, Logger } from "./shared";
-import * as env from "../../../env";
+import { _process, env, log, WebSemaphoreTestParams } from "./shared";
 
-export const webSocketsSemaphoreTest =
-    async (
-        webSemaphoreClient: WebSemaphoreWebsocketsClient,
-        log: Logger | undefined = undefined,
-        executionTime: number = -1
-    ) => {
-        log = log || console.log;
+type Processor = (data: any, info: { status: string, jobCrn: string }) => Promise<void>;
 
-        log("Connecting to WebSemaphore over websockets...")
+export const _01_BasicTest = async (
+    params: WebSemaphoreTestParams,
+    executionTimeOrProcessor: number | Processor = 3,
+) => {
+    const { testSemaphore, wsClientManager, httpClient } = params;
 
-        const body = { some: "abstract", data: 10 };
+    log("Connecting to WebSemaphore over websockets...");
 
-        log(`Acquiring lock with ${JSON.stringify(body)}...`)
-        
-        const { release, payload, status, jobCrn } =
-            await webSemaphoreClient.acquire({ semaphoreId: env.SEMAPHORE_ID, sync: false, body: { some: "abstract", data: 10 } });
+    const body = { some: "abstract", data: 10 };
 
-        log("Acquired lock...")
+    log(`Acquiring lock with ${JSON.stringify(body)}...`);
 
-        if (status == "acquired") { // always true in async mode
-            // do work
-            await process(payload, log, executionTime);
-        } else {
-            log(status);
-        }
+    const { release, payload, status, jobCrn } = await wsClientManager.client.acquire({
+        semaphoreId: env.SEMAPHORE_ID!,
+        sync: false,
+        body: { some: "abstract", data: 10 },
+    });
 
-        log("Releasing semaphore");
+    log("Acquired lock...");
 
-        release();
-
-        return { jobCrn, payload };
+    if (status == "acquired") {
+        // do work
+        await (
+            (typeof executionTimeOrProcessor == "number") ?
+                _process(payload, executionTimeOrProcessor as number) :
+                (executionTimeOrProcessor as Processor)(payload, { status, jobCrn })
+        )
+    } else {
+        log(status);
     }
 
-export default webSocketsSemaphoreTest;
+    log("Releasing semaphore");
+
+    release();
+
+    return { jobCrn, payload };
+};

@@ -1,155 +1,69 @@
-import { WebSocket } from "ws";
-import { WebSemaphoreWebsocketsClientManager, WebSemaphoreHttpClientManager, WebsemaphoreHttpClient } from "websemaphore/src";
-import * as env from "../../env";
-import { assert, time } from "console";
-import { SemaphoreReadResponse, SemaphoreUpsertRequest } from "websemaphore";
-import _01_testBasic from "./tests/01-basic";
-import { SemaphoreJob } from "websemaphore/src/types";
-// import { SemaphoreJob } from "websemaphore/src/types";
 
-const stage = "us-dev"; // environment stage (e.g., development, staging, production)
-const TEST_SEMAPHORE_ID = env.SEMAPHORE_ID; // semaphore ID from environment variables
+import { setup } from "./tests/00-setup";
 
-const upsertSemaphore = async (client: WebsemaphoreHttpClient, extraConfig?: Partial<SemaphoreUpsertRequest>) => {
-    return (await client.semaphore.upsert({
-        id: TEST_SEMAPHORE_ID, // semaphore ID to upsert
-        websockets: {
-            isActive: true, // enable websockets for the semaphore
-            onClientDropped: "drop" // drop clients when disconnected
-        },
-        maxValue: 3, // maximum value for the semaphore
-        isActive: true, // activate the semaphore
-        timeout: {},
-        ...(extraConfig || {}) // merge additional configuration if provided
-    })).data;
+import { _01_BasicTest } from "./tests/01-basic";
+import { _02_TimeoutTest } from "./tests/02-timeout";
+import { _03_RescheduleTest } from "./tests/03-reschedule-basic";
+import { _04_RescheduleOrderRetentionTest } from "./tests/04-reschedule-order";
+import { _05_RequeueTest } from "./tests/05-requeue";
+import { _06_CancelTest } from "./tests/06-cancel-test";
+import { _07_DeleteTest } from "./tests/07-delete-test";
+
+import { _10_mapping_basic } from "./tests/10-mapping-basic";
+import { _11_mapping_change_transport } from "./tests/11-mapping-change-transport";
+
+import { _21_transport_http_fallback } from "./tests/21-transport-http-fallback";
+import { _22_transport_websemaphore_fallback } from "./tests/22-transport-websemaphore-fallback";
+
+const ALL_TESTS: Record<string, (...p: Parameters<typeof _01_BasicTest>) => any> = {
+    _01_BasicTest,
+    _02_TimeoutTest,
+    _03_RescheduleTest,
+    _04_RescheduleOrderRetentionTest,
+    _05_RequeueTest,
+    _06_CancelTest,
+    _07_DeleteTest,
+
+    _10_mapping_basic,
+    // _11_mapping_change_transport,
+    // _21_transport_http_fallback,
+    // _22_transport_websemaphore_fallback
 }
 
-const deleteSemaphore = async (client: WebsemaphoreHttpClient) => {
-    // not implemented
+Object.keys(ALL_TESTS);
+const TESTS: typeof ALL_TESTS = { 
+    // ...ALL_TESTS,
+    _10_mapping_basic
 }
 
-// Main function to demonstrate advanced usage of the WebSemaphore library
-const advanced = async () => {
-    // --------- SETUP --------
+const main = async () => {
+    const config = await setup();
 
-    const token = env.APIKEY_ADMIN; // admin API key from environment variables
+    const tests = TESTS
 
-    // Initialize HTTP client manager with base URL and token
-    const httpClientManager = WebSemaphoreHttpClientManager();
-    const httpClient = httpClientManager.initialize({ baseUrl: stage, token });
+    console.time("Total test time")
+    try {
+        for (const testName in tests) {
+            console.log("=".repeat(40));
+            console.time(testName);
+            console.log("START TEST: " + testName);
+            console.log("=".repeat(40));
 
-    // Authorize the HTTP client manager and log the owner ID
-    const owner = await httpClientManager.authorize();
-    console.log(owner.id);
+            const test = TESTS[testName];
 
-    // Create or update the test semaphore
-    const testSemaphore = await upsertSemaphore(httpClient);
+            await test(config);
+            console.log("=".repeat(40));
+            console.timeEnd(testName);
+            console.log("=".repeat(40));
+        }
 
-    // List all semaphores and log them to verify the test semaphore exists
-    const semaphores = await httpClient.semaphore.list();
-    console.table(semaphores.data.Items); // just checking on the semaphores
-    assert(semaphores.data.Items?.find((sem: SemaphoreReadResponse) => sem.id == testSemaphore.id), "can't find the test semaphore");
+        console.log(Object.keys(TESTS).length, " tests were completed successfully");
+        console.timeEnd("Total test time")
 
-    // --------- WEBSOCKET SETUP --------
-
-    // WebSocket client manager for stats (ADMIN policy)
-    // This client listens to stats such as locks acquired and jobs created/updated
-    const wsStatsClientManager = WebSemaphoreWebsocketsClientManager({ websockets: WebSocket as any, logLevel: "ALL", baseUrl: stage });
-    await wsStatsClientManager.connect(env.APIKEY_ADMIN);
-    // wsStatsClientManager.client.on("message", (msg) => console.log(":::::    STATS     :::::\n", msg, "\n::::: END OF STATS :::::\n"))
-
-    // WebSocket client manager for worker operations (WORKER policy)
-    // This client is used to acquire resources and process jobs
-    const wsClientManager = WebSemaphoreWebsocketsClientManager({ websockets: WebSocket as any, logLevel: "ALL", baseUrl: stage });
-    await wsClientManager.connect(env.APIKEY_WORKER);
-
-    // --------- TESTS --------
-
-    // --------- BASIC TEST
-
-    // Run basic test using the worker WebSocket client
-    const jobCrn = await _01_testBasic(wsClientManager.client);
-
-
-    // --------- TIMEOUT TEST
-
-    // Update the semaphore with a timeout configuration
-    await upsertSemaphore(httpClient, { timeout: { value: 2000 } });
-
-    // the basic test takes 5 seconds so should time out
-    const timedOutJobCrn = await _01_testBasic(wsClientManager.client);
-
-    // const toJob = SemaphoreJob.fromCrn(jobCrnTimedOut);
-    // toJob.status = "timeout";
-
-    const timedOutJob = (await httpClient.semaphore.readJob(testSemaphore.id!, { crn: timedOutJobCrn })).data;
-
-    assert(timedOutJob.status == "timeout");
-
-    // await httpClient.semaphore.readJob(testSemaphore.id!, { crn: timedOutJob.crn })
-
-    // --------- RESCHEDULE TEST
-
-    // to properly test reschedule we need to create more jobs first
-    // and then make sure the timed out job is performed BEFORE the newer jobs
-
-    // stop the semaphore to prevent the job newer job from processing
-    await httpClient.semaphore.upsert({ id: testSemaphore.id, isActive: false });
-
-    // schedule the next job
-    const laterJobPromise = wsClientManager.client.acquire({ semaphoreId: env.SEMAPHORE_ID, sync: false, body: { some: "abstract", data: 10 } });
-
-    await new Promise(r => setTimeout(r, 1000)); // to be sure there is some time difference
-
-    const rescheduledJobPromise = wsClientManager.client.reschedule({ jobCrn: timedOutJob.crn! });
-
-    await new Promise(r => setTimeout(r, 1000)); // to be sure there is some time difference
-
-    const queueItems = (await httpClient.semaphore.readQueue(testSemaphore.id!, { status: "scheduled" })).data;
-
-    
-    console.log("Items in queue before activation", queueItems.Items); // ?.map(qi => qi.crn)
-
-    const arrivals = [] as { jobCrn: string, release: () => Promise<any> }[];
-
-    laterJobPromise.then(({ jobCrn, release }: { jobCrn: string, release: () => Promise<any> }) => arrivals.push({ jobCrn, release }));
-    rescheduledJobPromise.then(({ jobCrn, release }: { jobCrn: string, release: () => Promise<any> }) => arrivals.push({ jobCrn, release }));
-
-    console.log("Activating");
-    const activateResponse = await httpClient.semaphore.activate(testSemaphore.id!, { channelId: "default" }); //({ id: testSemaphore.id, isActive: true });
-
-    console.log(activateResponse.data);
-
-    const firstSettledJobResponse = await Promise.race([laterJobPromise, rescheduledJobPromise]);
-
-    const firstSettledJob = SemaphoreJob.fromCrn(firstSettledJobResponse.jobCrn);
-
-    // console.log({ firstSettledCrn })
-    // assert(
-    //     timedOutJob.crn == firstSettledJob.clone("timeout").crn,
-    //     `First job reseased was\n${firstSettledJob.clone("timeout").crn}, expected\n${timedOutJob.crn}`
-    // );
-    console.log(`First job reseased was\n${firstSettledJob.crn}, expected\n${timedOutJob.crn}`);
-    
-    console.log("Awaiting second job promise")
-
-    const laterJob = await rescheduledJobPromise;//Promise.race([laterJobPromise, rescheduledJobPromise]);
-    
-    console.log({ laterJob });
-
-
-    // console.log("Rescheduled job crn:", timedOutJobCrn)
-    console.log("Releasing jobs:", arrivals.map(j => j.jobCrn));
-
-    await Promise.all([
-        arrivals[0].release(),
-        arrivals[1].release()
-    ]);
-
-    // --------- REQUEUE TEST --------
-
-    process.exit();
+    } catch (ex) {
+        console.log("Error during tests:", ex);
+    }
+    process.exit(0);
 }
 
-// Execute the advanced function
-advanced();
+main();

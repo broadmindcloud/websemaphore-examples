@@ -1,7 +1,7 @@
 import { WebSemaphoreWebsocketsClient } from "websemaphore/src";
 // import * as env from "../../env";
-import _01_testBasic from "./tests/01-basic";
-import _02_testRequeue from "./tests/02-requeue";
+import _01_testBasic from "./basic-tests/01-basic";
+import _02_testRequeue from "./basic-tests/02-requeue";
 
 type Logger = typeof console.log;
 
