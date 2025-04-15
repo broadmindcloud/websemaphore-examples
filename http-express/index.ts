@@ -10,8 +10,7 @@ import { processRequest } from "./lib/process";
 import { configureSemaphore } from "./lib/configure-semaphore";
 import { setInFlight, stats } from "./lib/tracking";
 
-debugger;
-
+import { HttpCallbackProcessor } from "../websockets/src/tests/shared"
 // const l = console.log;
 // console.log = (...args) => {
 //   l(new Error().stack, ...args);
@@ -19,17 +18,17 @@ debugger;
 
 const _fetch: typeof fetch = async (url: RequestInfo | URL, opts?: RequestInit) => {
   const res = await fetch(url, opts);
+  debugger
 
   console.log("*".repeat(10), url)
   console.log(url)
   console.log(JSON.stringify(opts?.headers))
-  console.log("body:", JSON.stringify(opts?.body));
+  // console.log("body:", JSON.stringify(opts?.body || ""));
   console.log("res:", await res.text())
-  console.log("res headers:\n", Array.from(res.headers.entries()).join("\n"));
+  console.log("res headers:\n", Array.from(res.headers?.entries() || []).join("\n"));
   console.log("*".repeat(10))
   // console.log("Headers:", res.headers);
 
-  debugger;
   // if((url as string).endsWith("semaphore")) {
   //   console.log(res.headers)
   //   console.log(url, opts);
@@ -47,8 +46,8 @@ const websemaphoreClient = websemaphoreManager.initialize({ fetch: _fetch, baseU
 
 websemaphoreClient.setSecurityData({ token: env.APIKEY })
 
-export const httpCallbackServer = async (autotest?: boolean | typeof processRequest) => {
-  const app: express.Application = express();
+export const httpCallbackServer = async (autotest?: boolean | HttpCallbackProcessor) => {
+  const app: express.Application = express().use(express.json());
 
   const _orig = console.log.bind(console);
   const log = [] as string[];
@@ -91,14 +90,17 @@ export const httpCallbackServer = async (autotest?: boolean | typeof processRequ
 
 
   app.post('/processor', async (req: Request, res: Response) => {
-    console.log("Acquired lock", JSON.stringify(req.query));
+    console.log("Acquired lock", req.body);
     console.log("Acquired lock, headers", JSON.stringify(req.headers));
 
     const jobCrn = req.headers["x-chainstream-job-crn"];
 
-    (async () => {
-      const p = ["boolean","undefined"].includes(typeof autotest) ? processRequest : (autotest as typeof processRequest);
-      await p(req.query);
+    await (async () => {
+      debugger;
+      const p: HttpCallbackProcessor = ["boolean","undefined"].includes(typeof autotest) ? processRequest : (autotest as typeof processRequest);
+      
+      console.log(req.body, { jobCrn });
+      await p(req.body, { jobCrn: jobCrn as string });
 
       try {
         const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default", jobCrn } as any);

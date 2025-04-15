@@ -1,9 +1,8 @@
 
 import { SemaphoreReadResponse, WebSemaphoreHttpClientManager, WebSemaphoreWebsocketsClientManager } from "websemaphore/src";
 import { WebSocket } from "ws";
-import { env, panic, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, HttpCallbackProcessor, panic, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
 import { httpCallbackServer } from "../../../http-express/index"
-import { pick } from "lodash";
 
 const stage = "us-dev"; // environment stage (e.g., development, staging, production)
 
@@ -29,14 +28,19 @@ export const setup = async (withHttp?: boolean): Promise<WebSemaphoreTestParams>
     const wsClientManager = WebSemaphoreWebsocketsClientManager({ websockets: WebSocket as any, logLevel: "ALL", baseUrl: stage });
     await wsClientManager.connect(env.APIKEY_WORKER);
 
-    let processor = async (msg: any) => {
+    const processor: { current: HttpCallbackProcessor | null } = { current: null };
+
+    let _processor: HttpCallbackProcessor = async (msg: any, { jobCrn }: { jobCrn: string }) => {
+        if(processor.current)
+            return await processor.current(msg, { jobCrn });
+
         await Promise.resolve()
-        console.log("Default http processor", msg)
+        console.log("Default http processor", msg);
     }
 
-    const setHttpProcessor = (p: typeof processor) => processor = p;
+    const setHttpProcessor = (p: HttpCallbackProcessor) => processor.current = p;
 
-    const hcs = await httpCallbackServer()
+    const hcs = await httpCallbackServer(_processor);
 
-    return { httpClient, wsClientManager, testSemaphore, httpCallbackServer: hcs, setHttpProcessor };
+    return { httpClient, wsClientManager, testSemaphore, httpCallbackServer: { ...hcs, setHttpProcessor } };
 };

@@ -25,7 +25,7 @@ const ALL_TESTS: Record<string, (...p: Parameters<typeof _01_BasicTest>) => any>
     _07_DeleteTest,
 
     _10_mapping_basic,
-    // _11_mapping_change_transport,
+    _11_mapping_change_transport,
     // _21_transport_http_fallback,
     // _22_transport_websemaphore_fallback
 }
@@ -33,8 +33,8 @@ const ALL_TESTS: Record<string, (...p: Parameters<typeof _01_BasicTest>) => any>
 Object.keys(ALL_TESTS);
 const TESTS: typeof ALL_TESTS = { 
     // _02_TimeoutTest
-    ...ALL_TESTS,
-    _11_mapping_change_transport
+    // ...ALL_TESTS,
+    _21_transport_http_fallback
 }
 
 const main = async () => {

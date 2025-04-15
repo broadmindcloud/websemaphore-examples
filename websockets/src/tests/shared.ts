@@ -5,6 +5,8 @@ export { env };
 
 export const log = console.log;
 
+export type HttpCallbackProcessor = (message: any, { jobCrn }: { jobCrn: string }) => void;
+
 export type WebSemaphoreTestParams = {
     httpClient: WebsemaphoreHttpClient;
     wsClientManager: WebsocketsClientManager;
@@ -12,8 +14,8 @@ export type WebSemaphoreTestParams = {
     httpCallbackServer: {
         requestSemaphore: (message?: any) => Promise<HttpResponse<void, void>>;
         callbackUrl: string;
+        setHttpProcessor: (p: HttpCallbackProcessor) => void
     },
-    setHttpProcessor: (message: any) => void
 };
 
 export const _process = async (payload: any, executionTime?: number) => {
@@ -29,7 +31,7 @@ export const _process = async (payload: any, executionTime?: number) => {
         log("Time to finish: ", workDuration)
     }
 
-    log("Processing done")
+    log("Processing done");
 }
 
 
