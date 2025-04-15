@@ -1,4 +1,4 @@
-import { SemaphoreUpsertRequest, WebsemaphoreHttpClient } from "websemaphore/src";
+import { HttpResponse, SemaphoreUpsertRequest, WebsemaphoreHttpClient } from "websemaphore/src";
 import * as env from "../../../env";
 import { WebsocketsClientManager } from "websemaphore/src/clients/websockets/manager";
 export { env };
@@ -9,6 +9,11 @@ export type WebSemaphoreTestParams = {
     httpClient: WebsemaphoreHttpClient;
     wsClientManager: WebsocketsClientManager;
     testSemaphore: any;
+    httpCallbackServer: {
+        requestSemaphore: (message?: any) => Promise<HttpResponse<void, void>>;
+        callbackUrl: string;
+    },
+    setHttpProcessor: (message: any) => void
 };
 
 export const _process = async (payload: any, executionTime?: number) => {
@@ -39,7 +44,7 @@ const stage = "us-dev"; // environment stage (e.g., development, staging, produc
 const TEST_SEMAPHORE_ID = env.SEMAPHORE_ID; // semaphore ID from environment variables
 
 export const upsertSemaphore = async (client: WebsemaphoreHttpClient, extraConfig?: Partial<SemaphoreUpsertRequest>) => {
-    return (await client.semaphore.upsert({
+    const cfg = {
         id: TEST_SEMAPHORE_ID,
         websockets: {
             isActive: true,
@@ -48,6 +53,9 @@ export const upsertSemaphore = async (client: WebsemaphoreHttpClient, extraConfi
         maxValue: 3,
         isActive: true,
         timeout: {},
+        mapping: {},
         ...(extraConfig || {})
-    })).data;
+    };
+    console.log(cfg);
+    return (await client.semaphore.upsert(cfg)).data;
 };

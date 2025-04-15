@@ -26,9 +26,9 @@ const handler = (data, context) => {
         },
         routing: {
             protocol: "http",
-            url: ,          // relevant for http
-            method: ,       // relevant for http
-            remoteId: ,     // relevant for websockets
+            address: "${callbackUrl}",  // relevant for http
+            method: "POST",             // relevant for http
+            remoteId: "",               // relevant for websockets
         }
     };
     return result;
@@ -37,16 +37,24 @@ const handler = (data, context) => {
 `;
 
 
-export const _10_mapping_basic = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient } = params;
+export const _11_mapping_change_transport = async (params: WebSemaphoreTestParams) => {
+    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
+    
+    const callbackUrl = httpCallbackServer.callbackUrl;
+    
+    console.log("Configuring handler to ignore the websocket caller and instead use http at:", callbackUrl);
+
     // First, timeout the job
     await upsertSemaphore(params.httpClient, {
         id: env.SEMAPHORE_ID,
-        timeout: { value: 15000 }, mapping: {
-            handler,
+        timeout: { value: 15000 },
+        isActive: true,
+        mapping: {
+            handler: handler(callbackUrl),
             isActive: true,
             language: "javascript",
-            maxExecutionTime: 1
+            maxExecutionTime: 1,
+            canOverrideRouting: true
         }
     });
 
