@@ -1,5 +1,5 @@
 import { SemaphoreJob } from "websemaphore/src";
-import { panic, WebSemaphoreTestParams } from "./shared";
+import { expect, WebSemaphoreTestParams } from "./shared";
 import { _02_TimeoutTest } from "./02-timeout";
 
 export const _05_RequeueTest = async (params: WebSemaphoreTestParams) => {
@@ -18,15 +18,15 @@ export const _05_RequeueTest = async (params: WebSemaphoreTestParams) => {
     debugger;
 
     // Validate that the requeued job has the same payload but a different CRN
-    panic(
+    expect(
         SemaphoreJob.fromCrn(timedOutJob.crn!).clone("inflight").crn != requeuedJob.jobCrn,
         "The requeued job must have a new crn"
     );
-    panic(
+    expect(
         SemaphoreJob.fromCrn(timedOutJob.crn!).created < SemaphoreJob.fromCrn(requeuedJob.jobCrn).created,
         `The requeued should job be younger than the original job ${SemaphoreJob.fromCrn(timedOutJob.crn!).created} !< ${SemaphoreJob.fromCrn(requeuedJob.jobCrn).created}`
     );
-    panic(
+    expect(
         JSON.stringify(requeuedJob.payload) === JSON.stringify(payload),
         "The requeued must have the same payload as the original job"
     );

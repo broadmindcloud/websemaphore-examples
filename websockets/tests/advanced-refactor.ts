@@ -64,7 +64,7 @@ const timeoutTest = async () => {
 
     console.log("timedOutJob", timedOutJob);
 
-    panic(timedOutJob.status == "timeout", "Job is not in timeout status");
+    expect(timedOutJob.status == "timeout", "Job is not in timeout status");
 
     console.log("Timeout test successful with job CRN:", timedOutJobCrn);
 
@@ -94,8 +94,8 @@ describe("WebSemaphore Tests", () => {
         const rescheduledJob = await wsClientManager.client.reschedule({ jobCrn: timedOutJob.crn! });
 
         console.log("Successfully acquired _rescheduled_ job");
-        panic(rescheduledJob.created == timedOutJob.created, "Rescheduled job has different created timestamp");
-        panic(JSON.stringify(rescheduledJob.payload) == JSON.stringify(payload), "Rescheduled job has different payload");
+        expect(rescheduledJob.created == timedOutJob.created, "Rescheduled job has different created timestamp");
+        expect(JSON.stringify(rescheduledJob.payload) == JSON.stringify(payload), "Rescheduled job has different payload");
 
         await new Promise(r => setTimeout(r, 500));
 
@@ -138,7 +138,7 @@ describe("WebSemaphore Tests", () => {
 
         console.log("Both jobs acquired:\n", arrivals.map(j => j.jobCrn + "\n"));
 
-        panic(SemaphoreJob.fromCrn(timedOutJob.crn!).clone("inflight").crn == arrivals[0].jobCrn, "The rescheduled job arrived later than the newer job");
+        expect(SemaphoreJob.fromCrn(timedOutJob.crn!).clone("inflight").crn == arrivals[0].jobCrn, "The rescheduled job arrived later than the newer job");
 
         console.log("Releasing");
 

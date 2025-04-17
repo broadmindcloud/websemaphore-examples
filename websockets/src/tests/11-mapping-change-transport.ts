@@ -1,5 +1,5 @@
 import { SemaphoreJob } from "websemaphore/src";
-import { env, panic, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
 import { _02_TimeoutTest } from "./02-timeout";
 import { _01_BasicTest } from "./01-basic";
 
@@ -46,7 +46,6 @@ export const _11_mapping_change_transport = async (params: WebSemaphoreTestParam
 
     console.log("Configuring handler to ignore the websocket caller and instead use http at:", callbackUrl);
 
-    // First, timeout the job
     await upsertSemaphore(params.httpClient, {
         id: env.SEMAPHORE_ID,
         timeout: { value: 15000 },
@@ -74,9 +73,10 @@ export const _11_mapping_change_transport = async (params: WebSemaphoreTestParam
             console.log("↳ Request lock");
             console.log("  ↳ Mapping");
             console.log("    ↳ Acquired:", JSON.stringify(msg));
-            panic(msg.body.budget == input.engagement * 1000, "The mapping failed.");
+            expect(msg.body.budget == input.engagement * 1000, "The mapping failed.");
             
             try {
+                console.log("Releasing via http...")
                 await httpClient.semaphore.release(testSemaphore.id, { jobCrn })
             
                 res(undefined)

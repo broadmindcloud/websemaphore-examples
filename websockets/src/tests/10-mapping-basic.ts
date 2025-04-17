@@ -1,5 +1,5 @@
 import { SemaphoreJob } from "websemaphore/src";
-import { env, panic, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
 import { _02_TimeoutTest } from "./02-timeout";
 import { _01_BasicTest } from "./01-basic";
 
@@ -63,7 +63,7 @@ export const _10_mapping_basic = async (params: WebSemaphoreTestParams) => {
     console.log("↓ Request lock");
     console.log("  ↓ Mapping");
     console.log("Output:", payload)
-    panic(output.budget == input.engagement * 1000, "The mapping failed.")
+    expect(output.budget == input.engagement * 1000, "The mapping failed.")
     await release();
 }
 

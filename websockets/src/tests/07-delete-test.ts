@@ -1,5 +1,5 @@
 import { SemaphoreJob } from "websemaphore/src";
-import { panic, WebSemaphoreTestParams } from "./shared";
+import { expect, WebSemaphoreTestParams } from "./shared";
 import { _02_TimeoutTest } from "./02-timeout";
 
 export const _07_DeleteTest = async (params: WebSemaphoreTestParams) => {
@@ -19,6 +19,6 @@ export const _07_DeleteTest = async (params: WebSemaphoreTestParams) => {
     const canceledJobRes = await httpClient.semaphore.readJob(testSemaphore.id, { crn: canceledJob.jobCrn });
 
     console.log("Canceled job CRN:", canceledJobRes.data.crn);
-    panic(canceledJobRes.data.status == "archived", "Job is not in archived status");
+    expect(canceledJobRes.data.status == "archived", "Job is not in archived status");
     console.log("Successfully canceled job", canceledJob.status);
 }

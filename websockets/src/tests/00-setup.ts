@@ -1,7 +1,7 @@
 
 import { SemaphoreReadResponse, WebSemaphoreHttpClientManager, WebSemaphoreWebsocketsClientManager } from "websemaphore/src";
 import { WebSocket } from "ws";
-import { env, HttpCallbackProcessor, panic, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, HttpCallbackProcessor, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
 import { httpCallbackServer } from "../../../http-express/index"
 
 const stage = "us-dev"; // environment stage (e.g., development, staging, production)
@@ -19,11 +19,11 @@ export const setup = async (withHttp?: boolean): Promise<WebSemaphoreTestParams>
 
     const semaphores = await httpClient.semaphore.list();
     console.log(semaphores.data.Items);
-    panic(!!semaphores.data.Items?.find((sem: SemaphoreReadResponse) => sem.id == testSemaphore.id), "can't find the test semaphore");
+    expect(!!semaphores.data.Items?.find((sem: SemaphoreReadResponse) => sem.id == testSemaphore.id), "can't find the test semaphore");
 
     const wsStatsClientManager = WebSemaphoreWebsocketsClientManager({ websockets: WebSocket as any, logLevel: "ALL", baseUrl: stage });
     await wsStatsClientManager.connect(env.APIKEY_ADMIN);
-    // wsStatsClientManager.client.on("message", (msg) => co    nsole.log(":::::    STATS     :::::\n", msg, "\n::::: END OF STATS :::::\n"))
+    // wsStatsClientManager.client.on("message", (msg) => console.log(":::::    STATS     :::::\n", msg, "\n::::: END OF STATS :::::\n"))
 
     const wsClientManager = WebSemaphoreWebsocketsClientManager({ websockets: WebSocket as any, logLevel: "ALL", baseUrl: stage });
     await wsClientManager.connect(env.APIKEY_WORKER);

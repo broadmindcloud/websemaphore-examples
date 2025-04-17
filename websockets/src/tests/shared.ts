@@ -35,7 +35,7 @@ export const _process = async (payload: any, executionTime?: number) => {
 }
 
 
-export const panic = (bool: boolean, message: string) => {
+export const expect = (bool: boolean, message: string) => {
     if (!bool) {
         console.error(new Error(message));
         global.process.exit();

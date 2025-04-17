@@ -27,6 +27,7 @@ export const LOG_LEVEL = "";
     use another semaphore id
 */
 export const SEMAPHORE_ID = "test-semaphore";
+export const SEMAPHORE_ID_FAILOVER = "test-semaphore-failover";
 
 /*
     the tunneling provider is only necessary for local demo/testing

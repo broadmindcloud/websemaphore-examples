@@ -1,5 +1,5 @@
 import { _01_BasicTest } from "./01-basic";
-import { panic, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
 
 export const _02_TimeoutTest = async (params: WebSemaphoreTestParams) => {
     const { testSemaphore, wsClientManager, httpClient, } = params;
@@ -18,7 +18,7 @@ export const _02_TimeoutTest = async (params: WebSemaphoreTestParams) => {
     console.log("timedOutJob", timedOutJob)
 
 
-    panic(timedOutJob.status == "timeout", "Job is not in timeout status");
+    expect(timedOutJob.status == "timeout", "Job is not in timeout status");
 
     console.log("Timeout test successful with job CRN:", timedOutJobCrn);
 

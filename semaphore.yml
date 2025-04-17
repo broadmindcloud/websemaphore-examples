@@ -1,0 +1,29 @@
+---
+owner: igor.rubinovich@gmail.com
+id: test-semaphore
+created: '2025-04-17T10:34:48.486Z'
+isActive: true
+mapping:
+  isActive: false
+maxValue: 3
+routing:
+- isActive: true
+  protocol: websockets
+- address: intentionally-wrong-address
+  isActive: true
+  method: POST
+  protocol: http
+- address: igor.rubinovich@gmail.com:test-semaphore-failover
+  isActive: true
+  protocol: websemaphore
+routings:
+- isActive: true
+  protocol: websockets
+- address: https://37fc-78-45-154-38.ngrok-free.app/processor
+  isActive: true
+  method: POST
+  protocol: http
+timeout:
+  value: 15000
+title: Test Semaphore
+updated: '2025-04-17T10:34:48.486Z'

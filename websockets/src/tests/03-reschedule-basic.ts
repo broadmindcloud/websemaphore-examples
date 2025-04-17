@@ -2,7 +2,7 @@ import { WebsemaphoreHttpClient } from "websemaphore";
 import { SemaphoreJob } from "websemaphore/src";
 import { WebsocketsClientManager } from "websemaphore/src/clients/websockets/manager";
 import { _02_TimeoutTest } from "./02-timeout";
-import { panic, WebSemaphoreTestParams } from "./shared";
+import { expect, WebSemaphoreTestParams } from "./shared";
 
 export const _03_RescheduleTest = async (params:  WebSemaphoreTestParams) => {
     const { testSemaphore, wsClientManager, httpClient } = params;
@@ -17,11 +17,11 @@ export const _03_RescheduleTest = async (params:  WebSemaphoreTestParams) => {
 
     console.log("Successfully acquired _rescheduled_ job");
     const rescheduledJob = SemaphoreJob.fromCrn(rescheduledJobResponse.jobCrn)
-    panic(
+    expect(
         rescheduledJob.created == timedOutJob.created,
         `Rescheduled job should have the same created timestamp as the original, but ${rescheduledJob.created} != ${timedOutJob.created}`
     );
-    panic(JSON.stringify(rescheduledJobResponse.payload) == JSON.stringify(payload), `Rescheduled job has different payload: ${rescheduledJob.payload} != ${payload}`);
+    expect(JSON.stringify(rescheduledJobResponse.payload) == JSON.stringify(payload), `Rescheduled job has different payload: ${rescheduledJob.payload} != ${payload}`);
 
     await new Promise(r => setTimeout(r, 500));
 

@@ -2,7 +2,7 @@ import { WebsemaphoreHttpClient } from "websemaphore/src";
 import { SemaphoreJob } from "websemaphore/src";
 import { WebsocketsClientManager } from "websemaphore/src/clients/websockets/manager";
 import { _02_TimeoutTest } from "./02-timeout";
-import { env, panic, WebSemaphoreTestParams } from "./shared";
+import { env, expect, WebSemaphoreTestParams } from "./shared";
 
 // :::::: RESCHEDULE TEST ::::::
 export const _04_RescheduleOrderRetentionTest = async (params: WebSemaphoreTestParams) => {
@@ -45,7 +45,7 @@ export const _04_RescheduleOrderRetentionTest = async (params: WebSemaphoreTestP
     console.log("Both jobs acquired:\n", arrivals.map(j => j.jobCrn + "\n"));
 
     debugger;
-    panic(SemaphoreJob.fromCrn(timedOutJob.crn!).clone("inflight").crn == arrivals[0].jobCrn, "The rescheduled job arrived later than the newer job");
+    expect(SemaphoreJob.fromCrn(timedOutJob.crn!).clone("inflight").crn == arrivals[0].jobCrn, "The rescheduled job arrived later than the newer job");
 
     console.log("Releasing")
 
