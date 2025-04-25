@@ -1,3 +1,10 @@
+/*
+    The most basic happy path test for WebSemaphore (websockets)
+    1. Acquire a lock
+    2. Do some work
+    3. Release the lock
+*/
+
 import { _process, env, log, WebSemaphoreTestParams } from "./shared";
 
 type Processor = (data: any, info: { status: string, jobCrn: string }) => Promise<void>;

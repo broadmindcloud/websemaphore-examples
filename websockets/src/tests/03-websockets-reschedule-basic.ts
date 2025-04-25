@@ -1,13 +1,20 @@
-import { WebsemaphoreHttpClient } from "websemaphore";
+/*
+    A basic job reschedule test (websockets)
+
+    1. timeout the job
+    2. reschedule the job
+    3. once the job is acquired, verify it's the same job with the same crn, payload and created timestamp
+    4. release the job
+*/
+
 import { SemaphoreJob } from "websemaphore/src";
-import { WebsocketsClientManager } from "websemaphore/src/clients/websockets/manager";
-import { _02_TimeoutTest } from "./02-timeout";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
 import { expect, WebSemaphoreTestParams } from "./shared";
 
 export const _03_RescheduleTest = async (params:  WebSemaphoreTestParams) => {
     const { testSemaphore, wsClientManager, httpClient } = params;
 
-    const { timedOutJob, payload } = await _02_TimeoutTest(params);
+    const { timedOutJob, payload } = await _02_websockets_timeout(params);
 
     console.log({ timedOutJobCrn: timedOutJob.crn });
 

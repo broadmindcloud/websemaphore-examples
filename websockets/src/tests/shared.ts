@@ -5,18 +5,24 @@ export { env };
 
 export const log = console.log;
 
-export type HttpCallbackProcessor = (message: any, { jobCrn }: { jobCrn: string }) => void;
+export type HttpCallbackProcessor = (message: any, { jobCrn }: { jobCrn: string }) => Promise<void | "skip_release">;
+
+export type HttpCallbackServer = {
+    requestSemaphore: (message?: any) => Promise<HttpResponse<void, void>>;
+    callbackUrl: string;
+    setHttpProcessor: (p: HttpCallbackProcessor) => void,
+    waitForMessage: () => Promise<{ message: any; jobCrn: string; release: () => Promise<void>; }>,
+    acquire: (channelCrn: string | { semaphoreId: string, channelId: string }, input: any) => Promise<{ message: any; jobCrn: string; release: () => Promise<void> }>,
+};
 
 export type WebSemaphoreTestParams = {
     httpClient: WebsemaphoreHttpClient;
     wsClientManager: WebsocketsClientManager;
     testSemaphore: any;
-    httpCallbackServer: {
-        requestSemaphore: (message?: any) => Promise<HttpResponse<void, void>>;
-        callbackUrl: string;
-        setHttpProcessor: (p: HttpCallbackProcessor) => void
-    },
+    httpCallbackServer: HttpCallbackServer,
+    restartHttpServer: () => Promise<HttpCallbackServer>
 };
+// restartHttpServer: () => 
 
 export const _process = async (payload: any, executionTime?: number) => {
     // do work
@@ -48,16 +54,18 @@ const TEST_SEMAPHORE_ID = env.SEMAPHORE_ID; // semaphore ID from environment var
 export const upsertSemaphore = async (client: WebsemaphoreHttpClient, extraConfig?: Partial<SemaphoreUpsertRequest>) => {
     const cfg = {
         id: TEST_SEMAPHORE_ID,
-        websockets: {
-            isActive: true,
-            onClientDropped: "drop"
-        },
         maxValue: 3,
         isActive: true,
         timeout: {},
         mapping: {},
+        // routing: [
+        //     {
+        //         isActive: true,
+        //         onError: "drop" as "drop"
+        //     }    
+        // ],
         ...(extraConfig || {})
     };
-    console.log(cfg);
+    console.log("Upserting semaphore config:", JSON.stringify(cfg));
     return (await client.semaphore.upsert(cfg)).data;
 };

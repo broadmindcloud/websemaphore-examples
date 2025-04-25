@@ -47,10 +47,17 @@ const websemaphoreClient = websemaphoreManager.initialize({ fetch: _fetch, baseU
 websemaphoreClient.setSecurityData({ token: env.APIKEY })
 
 export const httpCallbackServer = async (autotest?: boolean | HttpCallbackProcessor) => {
+  debugger;
+
+  console.log("INITIALIZING CALLBACK SERVER \n\n\n\n")
   const app: express.Application = express().use(express.json());
 
   const _orig = console.log.bind(console);
   const log = [] as string[];
+
+  const processor = {
+    run: typeof autotest == "boolean" ? processRequest : autotest
+  }
 
 
   console.log = (...args) => {
@@ -97,23 +104,33 @@ export const httpCallbackServer = async (autotest?: boolean | HttpCallbackProces
 
     await (async () => {
       debugger;
-      const p: HttpCallbackProcessor = ["boolean","undefined"].includes(typeof autotest) ? processRequest : (autotest as typeof processRequest);
-      
-      console.log(req.body, { jobCrn });
-      await p(req.body, { jobCrn: jobCrn as string });
+      const p: HttpCallbackProcessor = ["boolean","undefined"].includes(typeof autotest) ? processRequest : (autotest as HttpCallbackProcessor);
+
 
       try {
+        if (p) {
+          const res = await p(req.body, { jobCrn: jobCrn as string });
+          if (res == "skip_release") {
+            console.log("Skipping default release");
+            return;
+          }
+        }
+
+        console.log("Default release")
         const resp = await websemaphoreClient.semaphore.release(SEMAPHORE_ID, { channelId: "default", jobCrn } as any);
+
+        console.log(req.body, { jobCrn });
+
         // console.log(`Release response: ${JSON.stringify(resp?.data)}`);
         console.log('Done');
       } catch (ex) {
-        console.log("Couldn't release semaphore: ", (ex as any)?.error?.message)
+        console.log("Couldn't release semaphore: ", (ex as any))
       }
       console.log("Above attempted to release job", jobCrn);
 
     })();
 
-    res.send("Ok")
+    res.send({ status: "Ok" })
   });
 
   app.get('/', async (req: Request, res: Response) => {
@@ -144,11 +161,12 @@ export const httpCallbackServer = async (autotest?: boolean | HttpCallbackProces
   const callback = `${tunnel.host}/processor`;
 
   const websemaphoreConfig = configureSemaphore(callback)
-  tunnel.app.listen(env.HTTP_PORT);
+  const server = tunnel.app.listen(env.HTTP_PORT);
 
   const callbackUrl = `${tunnel.host}/processor`;
 
-  if(typeof autotest == 'boolean' && autotest)
+  if ((typeof autotest == 'boolean') && autotest) {
+    console.log("Autotest")
     try {
       await websemaphoreClient.semaphore.upsert(websemaphoreConfig);
 
@@ -156,21 +174,23 @@ export const httpCallbackServer = async (autotest?: boolean | HttpCallbackProces
 
       console.log(`Semaphore '${SEMAPHORE_ID}' configured to callback ${callback}`);
       console.log(`Testing with one message. Wait a few seconds or see the web ui at http://localhost:${PORT}`);
-    
+
       try {
         // run initial test
         await requestSemaphore(JSON.stringify({ initialTest: true }));
       } catch (ex) {
         console.log((ex as any).message, (ex as any).status)
       }
-    
+
     } catch (ex) {
       console.error(ex);
     }
+  }
 
   return {
     requestSemaphore,
-    callbackUrl
+    callbackUrl,
+    server: server
   }
 }
 

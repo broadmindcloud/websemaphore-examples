@@ -1,11 +1,14 @@
-import { SemaphoreJob } from "websemaphore/src";
-import { expect, WebSemaphoreTestParams } from "./shared";
-import { _02_TimeoutTest } from "./02-timeout";
-import { _01_BasicTest } from "./01-basic";
-
 /*
-    A job can be
+    Cancel a job during processing (inflight) (websockets)
+    1. timeout the job
+    2. cancel the job
+    3. read the job and check that it's in archived status
 */
+
+import { expect, WebSemaphoreTestParams } from "./shared";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
+import { _01_BasicTest } from "./01-websockets-basic";
+
 export const _06_CancelTest = async (params: WebSemaphoreTestParams) => {
     const { testSemaphore, wsClientManager, httpClient } = params;
     // First, timeout the job

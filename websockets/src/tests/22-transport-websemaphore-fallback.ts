@@ -1,7 +1,7 @@
 import { Semaphore, SemaphoreJob } from "websemaphore/src";
 import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
-import { _02_TimeoutTest } from "./02-timeout";
-import { _01_BasicTest } from "./01-basic";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
+import { _01_BasicTest } from "./01-websockets-basic";
 
 /*
     This simulates a fallback to another websemaphore when all other options are exhausted
@@ -82,6 +82,14 @@ export const _22_transport_websemaphore_fallback = async (params: WebSemaphoreTe
             console.log("↳ Request lock");
             console.log("  ↳ Attempt websockets delivery ➝ client dropped");
             console.log("  ↳ Attempt http delivery:", JSON.stringify(msg));
+
+            const inbound = JSON.parse(msg.body);
+            
+            if(inbound.randomId != input.randomId) {
+                console.warn("Received an unexpected message:")
+                return;
+            }
+
             expect(msg.body.randomId == input.randomId, "Received an unexpected message.");
 
             try {

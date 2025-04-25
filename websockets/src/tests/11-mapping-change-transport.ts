@@ -1,8 +1,3 @@
-import { SemaphoreJob } from "websemaphore/src";
-import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
-import { _02_TimeoutTest } from "./02-timeout";
-import { _01_BasicTest } from "./01-basic";
-
 /*
     The handler on top is a dynamic mapping sitting in the semaphore config.
     It's executed right after the lock acquired and just before it's sent out.
@@ -13,6 +8,11 @@ import { _01_BasicTest } from "./01-basic";
     It's worth emphasizing that the worker requesting the job is not necessarily the same as the one performing it,
     and typically will not have the control over or visibility into the semaphore configuration including the mapping handler.
 */
+
+import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
+import { _01_BasicTest } from "./01-websockets-basic";
+
 
 const handler = (callbackUrl: string) => `
 const handler = (data, context) => {

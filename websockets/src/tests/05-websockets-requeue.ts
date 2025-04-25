@@ -1,12 +1,19 @@
+/*
+    Requeue a timed out job using its CRN (websockets)
+    1. timeout the job
+    2. requeeue the job using its CRN
+    3. once the job is acquired, veriy it's the same job (payload) with a different CRN and the new job is younger
+*/
+
 import { SemaphoreJob } from "websemaphore/src";
 import { expect, WebSemaphoreTestParams } from "./shared";
-import { _02_TimeoutTest } from "./02-timeout";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
 
 export const _05_RequeueTest = async (params: WebSemaphoreTestParams) => {
     const { testSemaphore, wsClientManager, httpClient } = params;
 
     // First, timeout the job
-    const { timedOutJob, payload } = await _02_TimeoutTest(params);
+    const { timedOutJob, payload } = await _02_websockets_timeout(params);
 
     console.log("Timed out job CRN:", timedOutJob.crn);
 

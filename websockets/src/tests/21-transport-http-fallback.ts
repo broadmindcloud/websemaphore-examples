@@ -1,7 +1,7 @@
 import { SemaphoreJob } from "websemaphore/src";
 import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
-import { _02_TimeoutTest } from "./02-timeout";
-import { _01_BasicTest } from "./01-basic";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
+import { _01_BasicTest } from "./01-websockets-basic";
 
 /*
     This simulates a fallback http connection for cases when a websockets worker dropped while waiting to acquire a semaphore,
@@ -65,7 +65,7 @@ export const _21_transport_http_fallback = async (params: WebSemaphoreTestParams
                 console.log("Releasing via http...")
                 await httpClient.semaphore.release(testSemaphore.id, { jobCrn })
 
-                res(undefined)
+                res({ ok: true })
             } catch (ex) {
                 rej(ex)
             }

@@ -12,7 +12,7 @@ const tryParse = (str: any) => {
     }
 }
 
-export const processRequest = (msg: any) => {
+export const processRequest: (msg: any, opts: { jobCrn: string }) => Promise<void | "skip_release"> = async (msg: any) => {
     const time = (config?.timeout?.value || 5000)  + Math.round((Math.random() * 10000 - 7000)) //2 * 60 * 1000 + Math.random() * 8000;
     const startTime = Date.now();
     const niceTime = Math.round(time / 10) / 100;
@@ -51,7 +51,7 @@ export const processRequest = (msg: any) => {
       ^C to exit\n
       -------\n\n`);
 
-            res({});
+            res(undefined);
 
         }, time);
 

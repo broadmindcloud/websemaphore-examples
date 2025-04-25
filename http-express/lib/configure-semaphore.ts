@@ -8,14 +8,21 @@ export const config = {
   title: "websemaphore-examples",
   maxValue: 3,
   isActive: true,
-  callback: {
-    onDeliveryError: "drop",
-    isActive: true,
-    address: "", // callback
-  },
-  websockets: {
-    onClientDropped: "drop"
-  },
+  routing: [
+    {
+      protocol: "http",
+      method: "POST",
+      address: ""
+    }
+  ],
+  // callback: {
+  //   onDeliveryError: "drop",
+  //   isActive: true,
+  //   address: "", // callback
+  // },
+  // websockets: {
+  //   onClientDropped: "drop"
+  // },
   timeout: {
     value: 10 * 1000
   }
@@ -23,7 +30,7 @@ export const config = {
 
 export const configureSemaphore = (callback: string) => {
   console.log(`Configuring semaphore '${SEMAPHORE_ID}' to callback ${callback}`);
-  config.callback.address = callback;
+  config.routing[0].address = callback;
 
   return config;
 }
