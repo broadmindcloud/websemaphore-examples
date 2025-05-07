@@ -13,6 +13,8 @@ export const APIKEY = APIKEY_ADMIN;
 */
 export const REGION = "us-dev"
 
+export const stage = REGION;
+
 /*
     change if this port is busy on your machine
 */

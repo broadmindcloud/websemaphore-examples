@@ -1,7 +1,7 @@
 import { Semaphore, SemaphoreJob } from "websemaphore/src";
-import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, expect, upsertSemaphore } from "../../../lib/shared";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { _01_BasicTest } from "./01-websockets-basic";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 /*
     This simulates a fallback to another websemaphore when all other options are exhausted
@@ -29,18 +29,18 @@ const version = (semaphoreChannel: string, ver: "beta" | "v1") => ({
     },
 }[ver]);
 
-export const _22_transport_websemaphore_fallback = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
+export const _22_transport_websemaphore_fallback = async (app: WebsemaphreTestSetup) => {
+    const { testSemaphore, wsClientManager, httpClient } = app;
 
-    const callbackUrl = httpCallbackServer.callbackUrl;
+    const callbackUrl = app.httpSever.callbackUrl;
 
-    console.log("Configuring failover http:", callbackUrl);
+    app.console.log("Configuring failover http:", callbackUrl);
 
     const user = await httpClient.user.current();
 
     const failoverSemaphore = new Semaphore({ owner: user.data.id, id: env.SEMAPHORE_ID_FAILOVER })
 
-    await upsertSemaphore(params.httpClient, {
+    await upsertSemaphore(app.httpClient, {
         id: env.SEMAPHORE_ID,
         title: "Test Semaphore",
         timeout: { value: 15000 },
@@ -52,11 +52,14 @@ export const _22_transport_websemaphore_fallback = async (params: WebSemaphoreTe
 
     });
 
-    await upsertSemaphore(params.httpClient, {
+    await upsertSemaphore(app.httpClient, {
         id: env.SEMAPHORE_ID_FAILOVER,
         title: "Test Semaphore Failover Target",
         timeout: { value: 15000 },
         isActive: true,
+        mapping: {
+            isActive: false
+        },
         routing: [
             {
                 protocol: "http",
@@ -67,40 +70,22 @@ export const _22_transport_websemaphore_fallback = async (params: WebSemaphoreTe
         ]
     });
 
-    const randomId = Math.random();
-    const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, randomId, willFailOver1: true };
+    app.console.log("Purging ", env.SEMAPHORE_ID_FAILOVER);
+
+    await app.httpClient.semaphore.purgeQueue(env.SEMAPHORE_ID_FAILOVER, {})
+
+    const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random(), willFailOver1: true };
 
     // we acquire via websockets but dont await and instead get the message in http next
-    wsClientManager.client.acquire({ semaphoreId: env.SEMAPHORE_ID!, sync: false, body: input, });
+    wsClientManager.client.acquire({ semaphoreId: env.SEMAPHORE_ID!, sync: false, body: input });
     wsClientManager.disconnect();
 
-    await new Promise((res, rej) => {
-        httpCallbackServer.setHttpProcessor(async (msg: any, { jobCrn }) => {
-            console.log("Acquired:", JSON.stringify(msg))
+    const jobMsg = await app.waitForSpecificMessage((jobMsg) => {
+        app.console.log("Received: ", jobMsg);
+        const j = SemaphoreJob.fromCrn(jobMsg.jobCrn);
+        return j.semaphore.id === env.SEMAPHORE_ID_FAILOVER && jobMsg?.message.body.id === input.id;
+    }, { maxAttempts: 10, maxWaitTime: 30000 });
 
-            console.log("Input:", JSON.stringify(input));
-            console.log("↳ Request lock");
-            console.log("  ↳ Attempt websockets delivery ➝ client dropped");
-            console.log("  ↳ Attempt http delivery:", JSON.stringify(msg));
-
-            const inbound = JSON.parse(msg.body);
-            
-            if(inbound.randomId != input.randomId) {
-                console.warn("Received an unexpected message:")
-                return;
-            }
-
-            expect(msg.body.randomId == input.randomId, "Received an unexpected message.");
-
-            try {
-                console.log("Releasing via http...")
-                await httpClient.semaphore.release(testSemaphore.id, { jobCrn })
-
-                res(undefined)
-            } catch (ex) {
-                rej(ex)
-            }
-        })
-    })
+    await jobMsg.release();
 }
 

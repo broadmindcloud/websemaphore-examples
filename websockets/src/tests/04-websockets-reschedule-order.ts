@@ -16,16 +16,17 @@
 
 import { SemaphoreJob } from "websemaphore/src";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { env, expect, WebSemaphoreTestParams } from "./shared";
+import { _process, env, expect } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 // :::::: RESCHEDULE TEST ::::::
-export const _04_RescheduleOrderRetentionTest = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient } = params;
+export const _04_websockets_reschedule_order_retention = async (app: WebsemaphreTestSetup) => {
+    const { testSemaphore, wsClientManager, httpClient } = app;
     // to properly test reschedule we need to create more jobs first
     // and then make sure the timed out job is performed BEFORE the newer jobs
 
     // so we call the timeout test first
-    const { timedOutJob } = await _02_websockets_timeout(params);
+    const { timedOutJob } = await _02_websockets_timeout(app);
 
     // stop the semaphore to prevent the job newer job from processing
     await httpClient.semaphore.upsert({ id: testSemaphore.id, isActive: false });
@@ -42,32 +43,32 @@ export const _04_RescheduleOrderRetentionTest = async (params: WebSemaphoreTestP
     const queueItems = (await httpClient.semaphore.readQueue(testSemaphore.id!, { status: "scheduled" })).data;
 
 
-    console.log("Items in queue before activation", queueItems.Items); // ?.map(qi => qi.crn)
+    app.console.log("Items in queue before activation", queueItems.Items); // ?.map(qi => qi.crn)
 
     const arrivals = [] as { jobCrn: string, release: () => Promise<any> }[];
 
     laterJobPromise.then(({ jobCrn, release }: { jobCrn: string, release: () => Promise<any> }) => arrivals.push({ jobCrn, release }));
     rescheduledJobPromise.then(({ jobCrn, release }: { jobCrn: string, release: () => Promise<any> }) => arrivals.push({ jobCrn, release }));
 
-    console.log("Activating");
+    app.console.log("Activating");
     const activateResponse = await httpClient.semaphore.activate(testSemaphore.id!, { channelId: "default" }); //({ id: testSemaphore.id, isActive: true });
 
-    console.log(activateResponse.data);
+    app.console.log(activateResponse.data);
 
     await Promise.all([laterJobPromise, rescheduledJobPromise]);
 
-    console.log("Both jobs acquired:\n", arrivals.map(j => j.jobCrn + "\n"));
+    app.console.log("Both jobs acquired:\n", arrivals.map(j => j.jobCrn + "\n"));
 
     debugger;
     expect(SemaphoreJob.fromCrn(timedOutJob.crn!).clone("inflight").crn == arrivals[0].jobCrn, "The rescheduled job arrived later than the newer job");
 
-    console.log("Releasing")
+    app.console.log("Releasing")
 
     await Promise.all([
         arrivals[0].release(),
         arrivals[1].release()
     ]);
 
-    console.log("The rescheduled job arrived earlier than the newer job");
-    console.log("Order-preserving reschedule test successful");
+    app.console.log("The rescheduled job arrived earlier than the newer job");
+    app.console.log("Order-preserving reschedule test successful");
 };

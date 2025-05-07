@@ -9,20 +9,20 @@
 
 import { SemaphoreJob } from "websemaphore/src";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { expect, WebSemaphoreTestParams } from "./shared";
+import { _process, expect } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
-export const _03_RescheduleTest = async (params:  WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient } = params;
+export const _03_websockets_reschedule = async (app:  WebsemaphreTestSetup) => {
 
-    const { timedOutJob, payload } = await _02_websockets_timeout(params);
+    const { timedOutJob, payload } = await _02_websockets_timeout(app);
 
-    console.log({ timedOutJobCrn: timedOutJob.crn });
+    app.console.log({ timedOutJobCrn: timedOutJob.crn });
 
     await new Promise(r => setTimeout(r, 1000)); // to be sure there is some time difference
 
-    const rescheduledJobResponse = await wsClientManager.client.reschedule({ jobCrn: timedOutJob.crn! });
+    const rescheduledJobResponse = await app.wsClientManager.client.reschedule({ jobCrn: timedOutJob.crn! });
 
-    console.log("Successfully acquired _rescheduled_ job");
+    app.console.log("Successfully acquired _rescheduled_ job");
     const rescheduledJob = SemaphoreJob.fromCrn(rescheduledJobResponse.jobCrn)
     expect(
         rescheduledJob.created == timedOutJob.created,
@@ -34,8 +34,8 @@ export const _03_RescheduleTest = async (params:  WebSemaphoreTestParams) => {
 
     await rescheduledJobResponse.release();
 
-    console.log("timedOutJob", timedOutJob.crn);
-    console.log("rescheduledJob", rescheduledJob.crn);
+    app.console.log("timedOutJob", timedOutJob.crn);
+    app.console.log("rescheduledJob", rescheduledJob.crn);
 
-    console.log("Basic timeout / reschedule scenario test susccessful")
+    app.console.log("Basic timeout / reschedule scenario test susccessful")
 };

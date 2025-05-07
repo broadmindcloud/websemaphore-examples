@@ -4,23 +4,23 @@
     2. read the job and check that it's in timeout status
 */
 
-import { _01_BasicTest } from "./01-websockets-basic";
-import { expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { _01_websockets_basic } from "./01-websockets-basic";
+import { _process, upsertSemaphore, expect } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
-export const _02_websockets_timeout = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient, } = params;
+export const _02_websockets_timeout = async (app: WebsemaphreTestSetup) => {
 
-    await upsertSemaphore(httpClient, { timeout: { value: 2000 } });
+    await upsertSemaphore(app.httpClient, { timeout: { value: 2000 }, isActive: true, routing: [{ protocol: "websockets", isActive: true }] });
 
-    const { jobCrn: timedOutJobCrn, payload } = await _01_BasicTest(params, 25) 
+    const { jobCrn: timedOutJobCrn, payload } = await _01_websockets_basic(app, { executionTimeSeconds: 25, skipConfig: true }) 
 
-    const timedOutJob = (await httpClient.semaphore.readJob(testSemaphore.id!, { crn: timedOutJobCrn })).data;
+    const timedOutJob = (await app.httpClient.semaphore.readJob(app.testSemaphore.id!, { crn: timedOutJobCrn })).data;
 
-    console.log("timedOutJob", timedOutJob)
+    app.console.log("timedOutJob", timedOutJob)
 
     expect(timedOutJob.status == "timeout", "Job is not in timeout status");
 
-    console.log("Timeout test successful with job CRN:", timedOutJobCrn);
+    app.console.log("Timeout test successful with job CRN:", timedOutJobCrn);
 
     return { timedOutJob, payload };
 };

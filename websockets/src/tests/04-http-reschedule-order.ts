@@ -16,40 +16,38 @@
 
 import { SemaphoreJob } from "websemaphore/src";
 import { _02_http_timeout } from "./02-http-timeout";
-import { _process, env, log, upsertSemaphore, WebSemaphoreTestParams, expect } from "./shared";
+import { _process, upsertSemaphore, expect } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 type Processor = (data: any, info: { status: string, jobCrn: string }) => Promise<void>;
 
 export const _04_http_reschedule_order = async (
-    params: WebSemaphoreTestParams,
-    executionTimeOrProcessor: number | Processor = 3,
+    app: WebsemaphreTestSetup,
 ) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
+    const { timedOutJob, payload } = await _02_http_timeout(app);
 
-    const { timedOutJob, payload } = await _02_http_timeout(params);
+    app.console.log("Rescheduling timed out job");
 
-    console.log("Rescheduling timed out job");
-
-    await upsertSemaphore(params.httpClient, {
-        id: testSemaphore.id,
+    await upsertSemaphore(app.httpClient, {
+        id: app.testSemaphore.id,
         isActive: false,
     });
 
-    console.log("Awaiting processing and release");
+    app.console.log("Awaiting processing and release");
 
     // schedule another job
     const input2 = { "title": "EUC", "Country": "BE", "engagement": 0.34, id: Math.random(), randomId: Math.random() };
 
-    await httpClient.semaphore.acquire(testSemaphore.id, { body: JSON.stringify(input2) });
+    await app.httpClient.semaphore.acquire(app.testSemaphore.id, input2 as any); // to fix: acquire input schema
 
     // reschedule the timed out job
-    await httpClient.semaphore.reschedule(testSemaphore.id!, { jobCrn: timedOutJob.crn });
+    await app.httpClient.semaphore.reschedule(app.testSemaphore.id!, { jobCrn: timedOutJob.crn });
 
-    await httpClient.semaphore.activate(testSemaphore.id, { channelId: "default" })
+    await app.httpClient.semaphore.activate(app.testSemaphore.id, { channelId: "default" })
 
-    const rescheduledJobMsg = await httpCallbackServer.waitForMessage();
+    const rescheduledJobMsg = await app.waitForMessage();
 
-    console.log(`
+    app.console.log(`
         Expecting the timed out job: ${timedOutJob.crn}
         Acquired after reschedule: ${rescheduledJobMsg.jobCrn}
     `);
@@ -61,9 +59,9 @@ export const _04_http_reschedule_order = async (
 
     await rescheduledJobMsg.release();
 
-    const jobMsg2 = await httpCallbackServer.waitForMessage();
+    const jobMsg2 = await app.waitForMessage();
 
-    console.log(`
+    app.console.log(`
         Expecting the next job: ${JSON.stringify(input2)}
         Acquired after reschedule: ${JSON.stringify(jobMsg2.message)}
     `);
@@ -73,7 +71,7 @@ export const _04_http_reschedule_order = async (
 
     await jobMsg2.release();
 
-    console.log("Http order reschedule test done");
+    app.console.log("Http order reschedule test done");
 
     return;
 };

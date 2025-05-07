@@ -1,8 +1,3 @@
-import { SemaphoreJob } from "websemaphore/src";
-import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
-import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { _01_BasicTest } from "./01-websockets-basic";
-
 /*
     This simulates a fallback http connection for cases when a websockets worker dropped while waiting to acquire a semaphore,
     and the job needs to be processed/forwarded to the user in a different way, e.g. order confirmation via email.
@@ -13,6 +8,11 @@ import { _01_BasicTest } from "./01-websockets-basic";
     4. expect to receive the job via the http callback
 
 */
+
+import { env, expect, upsertSemaphore } from "../../../lib/shared";
+import { _02_websockets_timeout } from "./02-websockets-timeout";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
+
 const version = (callbackUrl: string, ver: "beta" | "v1") => ({
     beta: {
         callback:   { address: callbackUrl, isActive: true, method: "POST", protocol: "http" },
@@ -20,20 +20,20 @@ const version = (callbackUrl: string, ver: "beta" | "v1") => ({
     },
     v1: {
         routing: [
-            { protocol: "websockets", isActive: true,                                       },
+            { protocol: "websockets", isActive: true,                                      },
             { protocol: "http",       isActive: true, address: callbackUrl, method: "POST" }
         ]
     }
 }[ver]);
 
-export const _21_transport_http_fallback = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
+export const _21_transport_http_fallback = async (app: WebsemaphreTestSetup) => {
+    const { testSemaphore, wsClientManager, httpClient } = app;
 
-    const callbackUrl = httpCallbackServer.callbackUrl;
+    const callbackUrl = app.httpSever.callbackUrl;
 
-    console.log("Configuring failover http:", callbackUrl);
+    app.console.log("Configuring failover http:", callbackUrl);
 
-    await upsertSemaphore(params.httpClient, {
+    await upsertSemaphore(app.httpClient, {
         id: env.SEMAPHORE_ID,
         timeout: { value: 15000 },
         isActive: true,
@@ -41,35 +41,35 @@ export const _21_transport_http_fallback = async (params: WebSemaphoreTestParams
             isActive: false,
         },
         ...version(callbackUrl, "v1")
-
     });
 
-    const randomId = Math.random();
-    const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, randomId };
+    const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random() };
 
     // we acquire via websockets but dont await and instead get the message in http next
-    wsClientManager.client.acquire({ semaphoreId: env.SEMAPHORE_ID!, sync: false, body: input, });
-    wsClientManager.disconnect();
+    const ap = wsClientManager.wsClient.send({
+        action: "lock.acquire",
+        payload: JSON.stringify({
+          id: input.id,
+          body: input,
+        }),
+        semaphoreId: app.testSemaphore.id
+      });
 
-    await new Promise((res, rej) => {
-        httpCallbackServer.setHttpProcessor(async (msg: any, { jobCrn }) => {
-            console.log("Acquired:", JSON.stringify(msg))
+    await wsClientManager.disconnect();
 
-            console.log("Input:", JSON.stringify(input));
-            console.log("↳ Request lock");
-            console.log("  ↳ Attempt websockets delivery ➝ client dropped");
-            console.log("  ↳ Attempt http delivery:", JSON.stringify(msg));
-            expect(msg.body.randomId == input.randomId, "Received an unexpected message.");
+    const jobMsg = await app.waitForSpecificMessage(
+        (jobMsg) => jobMsg?.message.body.id === input.id,
+    { maxAttempts: 10, input });
 
-            try {
-                console.log("Releasing via http...")
-                await httpClient.semaphore.release(testSemaphore.id, { jobCrn })
+    expect(!!jobMsg, "Didn't receive the expected message via http callback");
 
-                res({ ok: true })
-            } catch (ex) {
-                rej(ex)
-            }
-        })
-    })
+    await wsClientManager.reconnect();
+
+    await jobMsg.release();
+
+    await new Promise(res => setTimeout(res, 20000));
+
+
+    app.console.log("Transport http fallback successful");
 }
 

@@ -9,33 +9,29 @@
 
 import { SemaphoreJob } from "websemaphore/src";
 import { _02_http_timeout } from "./02-http-timeout";
-import { _process, env, log, upsertSemaphore, WebSemaphoreTestParams, expect } from "./shared";
-
-type Processor = (data: any, info: { status: string, jobCrn: string }) => Promise<void>;
+import { _process, upsertSemaphore } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 export const _03_http_reschedule = async (
-    params: WebSemaphoreTestParams,
-    executionTimeOrProcessor: number | Processor = 3,
+    app: WebsemaphreTestSetup
 ) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
-
-    const { timedOutJob, payload } = await _02_http_timeout(params);
+    const { timedOutJob, payload } = await _02_http_timeout(app);
     
-    console.log("Rescheduling timed out job");
+    app.console.log("Rescheduling timed out job");
 
-    (await httpClient.semaphore.reschedule(testSemaphore.id!, { jobCrn: timedOutJob.crn })).data;
+    (await app.httpClient.semaphore.reschedule(app.testSemaphore.id!, { jobCrn: timedOutJob.crn })).data;
 
     let jobMsg, job;
     do {
-        jobMsg = await httpCallbackServer.waitForMessage()
+        jobMsg = await app.waitForMessage()
         job = SemaphoreJob.fromCrn(jobMsg.jobCrn);
     } while(job?.messageId != timedOutJob.messageId)
 
-    console.log("Awaiting processing and release")
+    app.console.log("Awaiting processing and release")
 
     await jobMsg.release();
 
-    console.log("Http reschedule test done");
+    app.console.log("Http reschedule test done");
 
     return;
 };

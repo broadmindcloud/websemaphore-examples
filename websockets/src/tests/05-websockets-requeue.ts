@@ -6,21 +6,21 @@
 */
 
 import { SemaphoreJob } from "websemaphore/src";
-import { expect, WebSemaphoreTestParams } from "./shared";
+import { expect } from "../../../lib/shared";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
-export const _05_RequeueTest = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient } = params;
+export const _05_websockets_requeue = async (app: WebsemaphreTestSetup) => {
 
     // First, timeout the job
-    const { timedOutJob, payload } = await _02_websockets_timeout(params);
+    const { timedOutJob, payload } = await _02_websockets_timeout(app);
 
-    console.log("Timed out job CRN:", timedOutJob.crn);
+    app.console.log("Timed out job CRN:", timedOutJob.crn);
 
     // Requeue the job using its CRN
-    const requeuedJob = await wsClientManager.client.requeue({ jobCrn: timedOutJob.crn! });
+    const requeuedJob = await app.wsClientManager.client.requeue({ jobCrn: timedOutJob.crn! });
 
-    console.log("Successfully requeued job");
+    app.console.log("Successfully requeued job");
 
     debugger;
 
@@ -40,7 +40,7 @@ export const _05_RequeueTest = async (params: WebSemaphoreTestParams) => {
 
     await requeuedJob.release();
 
-    console.log("Timed out job CRN:", timedOutJob.crn);
-    console.log("Requeued job CRN:", requeuedJob.jobCrn);
-    console.log("Requeue test successful");
+    app.console.log("Timed out job CRN:", timedOutJob.crn);
+    app.console.log("Requeued job CRN:", requeuedJob.jobCrn);
+    app.console.log("Requeue test successful");
 };

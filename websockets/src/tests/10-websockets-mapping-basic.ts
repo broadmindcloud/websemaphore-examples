@@ -7,9 +7,9 @@
     and typically will not have the control over or visibility into the semaphore configuration including the mapping handler.
 */
 
-import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, expect, upsertSemaphore } from "../../../lib/shared";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { _01_BasicTest } from "./01-websockets-basic";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 const handler = `
 const handler = (data, context) => {
@@ -30,27 +30,34 @@ const handler = (data, context) => {
 `;
 
 
-export const _10_mapping_basic = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient } = params;
-    // First, timeout the job
-    await upsertSemaphore(params.httpClient, {
-        id: env.SEMAPHORE_ID,
-        timeout: { value: 15000 }, mapping: {
+export const _10_mapping_basic = async (app: WebsemaphreTestSetup) => {
+    debugger;
+    await upsertSemaphore(app.httpClient, {
+        id: app.testSemaphore.id,
+        timeout: { value: 15000 }, 
+        mapping: {
             handler,
             isActive: true,
             language: "javascript",
             maxExecutionTime: 1
-        }
+        },
+        routing: [
+            {
+                protocol: "websockets",
+                isActive: true
+            }
+        ]
     });
 
     const input = {
-        "title": "CERN",
-        "Country": "CH",
-        "engagement": 0.2
+        title: "CERN",
+        Country: "CH",
+        engagement: 0.2,
+        id: Math.random()
     };
-
+    app.console.log("Acquiring:", input)
     const { release, payload, status, jobCrn } =
-        await wsClientManager.client.acquire({
+        await app.wsClientManager.client.acquire({
             semaphoreId: env.SEMAPHORE_ID!,
             sync: false,
             body: input,
@@ -58,10 +65,10 @@ export const _10_mapping_basic = async (params: WebSemaphoreTestParams) => {
 
 
     const output = (payload as any).body;
-    console.log("Input:", input);
-    console.log("↓ Request lock");
-    console.log("  ↓ Mapping");
-    console.log("Output:", payload)
+    app.console.log("Input:", input);
+    app.console.log("↓ Request lock");
+    app.console.log("  ↓ Mapping");
+    app.console.log("Output:", payload)
     expect(output.budget == input.engagement * 1000, "The mapping failed.")
     await release();
 }

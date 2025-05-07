@@ -1,5 +1,5 @@
 import { WebSemaphoreWebsocketsClientManager } from "websemaphore/src";
-import { webSocketsSemaphoreTest } from "./shared";
+import { webSocketsSemaphoreTest } from "../../lib/shared";
 import * as env from "../../env";
 
 const main = async () => {

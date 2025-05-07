@@ -1,5 +1,13 @@
 {
 	"dependencies": {
-		"websemaphore": "file:../../chainstream/packages/websemaphore"
+		"@ngrok/ngrok": "^1.5.0",
+		"@types/express": "^5.0.1",
+		"@types/node": "^22.15.3",
+		"@types/ws": "^8.18.1",
+		"express": "^5.1.0",
+		"localhost-run": "^1.3.0",
+		"ts-node": "^10.9.2",
+		"websemaphore": "file:../../chainstream/packages/websemaphore",
+		"ws": "^8.18.1"
 	}
 }

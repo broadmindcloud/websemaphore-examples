@@ -5,42 +5,58 @@
     3. Release the lock
 */
 
-import { _process, env, log, WebSemaphoreTestParams } from "./shared";
+import { _process, env, upsertSemaphore } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 type Processor = (data: any, info: { status: string, jobCrn: string }) => Promise<void>;
 
-export const _01_BasicTest = async (
-    params: WebSemaphoreTestParams,
-    executionTimeOrProcessor: number | Processor = 3,
+export const _01_websockets_basic = async (
+    app: WebsemaphreTestSetup,
+    opts?: {
+        executionTimeSeconds?: number,
+        processor?: Processor,
+        skipConfig?: boolean
+    }
 ) => {
-    const { testSemaphore, wsClientManager, httpClient } = params;
 
-    log("Connecting to WebSemaphore over websockets...");
+    app.console.log("Connecting to WebSemaphore over websockets...");
 
+    if(!opts?.skipConfig)
+        upsertSemaphore(app.httpClient, {
+            id: env.SEMAPHORE_ID,
+            isActive: true,
+            mapping: { isActive: false },
+            routing: [
+                { protocol: "websockets", isActive: true }
+            ]
+        });
+        
     const body = { some: "abstract", data: 10 };
 
-    log(`Acquiring lock with ${JSON.stringify(body)}...`);
+    app.console.log(`Acquiring lock with ${JSON.stringify(body)}...`);
 
-    const { release, payload, status, jobCrn } = await wsClientManager.client.acquire({
+    debugger;
+
+    const { release, payload, status, jobCrn } = await app.wsClientManager.client.acquire({
         semaphoreId: env.SEMAPHORE_ID!,
         sync: false,
         body: { some: "abstract", data: 10 },
     });
 
-    log("Acquired lock...");
+    app.console.log("Acquired lock...");
 
     if (status == "acquired") {
         // do work
         await (
-            (typeof executionTimeOrProcessor == "number") ?
-                _process(payload, executionTimeOrProcessor as number) :
-                (executionTimeOrProcessor as Processor)(payload, { status, jobCrn })
+            opts?.processor ?
+                opts.processor(payload, { status, jobCrn }) :
+                _process(payload, opts?.executionTimeSeconds || 3)
         )
     } else {
-        log(status);
+        app.console.log(status);
     }
 
-    log("Releasing semaphore");
+    app.console.log("Releasing semaphore");
 
     release();
 

@@ -1,6 +1,6 @@
 import { WebSocket } from "ws";
 import { WebSemaphoreWebsocketsClientManager, WebSemaphoreHttpClientManager } from "websemaphore/src";
-import { webSocketsSemaphoreTest } from "./shared";
+import { webSocketsSemaphoreTest } from "../../lib/shared";
 import * as env from "../../env";
 
 const stage = "us-dev";

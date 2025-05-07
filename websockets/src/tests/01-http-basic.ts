@@ -5,40 +5,40 @@
     3. Release the lock
 */
 
-import { _process, env, log, upsertSemaphore, WebSemaphoreTestParams, expect } from "./shared";
+import { expect, upsertSemaphore } from "../../../lib/shared";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 type Processor = (data: any, info: { status: string, jobCrn: string }) => Promise<void>;
 
 export const _01_http_basic = async (
-    params: WebSemaphoreTestParams,
-    executionTimeOrProcessor: number | Processor = 3,
+    app: WebsemaphreTestSetup
 ) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
+    const { testSemaphore, httpSever } = app;
 
-    const sem = await upsertSemaphore(params.httpClient, {
+    const sem = await upsertSemaphore(app.httpClient, {
         id: testSemaphore.id,
         timeout: { value: 15000 },
         isActive: true,
         mapping: { isActive: false },
         routing: [
-            { protocol: "http", address: httpCallbackServer.callbackUrl, method: "POST", isActive: true }
+            { protocol: "http", address: httpSever.callbackUrl, method: "POST", isActive: true }
         ]
     });
 
     const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random(), randomId: Math.random() };
 
-    console.log("Acquiring semaphore")
+    app.console.log("Acquiring semaphore")
 
-    const jobMsg = await httpCallbackServer.acquire(testSemaphore.id, input)
+    const jobMsg = await app.acquire(testSemaphore.id, input)
 
-    console.log("Input:", JSON.stringify(input), "↳ Request lock", "   ↳ Acquired:", JSON.stringify(jobMsg.message));
+    app.console.log("Input:", JSON.stringify(input), "↳ Request lock", "   ↳ Acquired:", JSON.stringify(jobMsg.message));
     expect(input.id == jobMsg.message.id, "Unexpected message")
 
-    console.log("Awaiting processing and release")
+    app.console.log("Awaiting processing and release")
 
     await jobMsg.release();
 
-    console.log("Basic http test done");
+    app.console.log("Basic http test done");
 
     return;
 };

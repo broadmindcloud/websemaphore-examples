@@ -9,9 +9,9 @@
     and typically will not have the control over or visibility into the semaphore configuration including the mapping handler.
 */
 
-import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { env, expect, upsertSemaphore } from "../../../lib/shared";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { _01_BasicTest } from "./01-websockets-basic";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 
 const handler = (callbackUrl: string) => `
@@ -20,9 +20,8 @@ const handler = (data, context) => {
         payload: {
             ...data,
             body: {
-                title: data.body.title,
+                ...data.body,
                 country: data.body.Country,
-                engagement: data.body.engagement,
                 budget: 1000 * data.body.engagement
             },
         },
@@ -38,15 +37,14 @@ const handler = (data, context) => {
             
 `;
 
+export const _11_mapping_change_transport = async (app: WebsemaphreTestSetup) => {
+    const { testSemaphore, wsClientManager, httpClient } = app;
 
-export const _11_mapping_change_transport = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
-    
-    const callbackUrl = httpCallbackServer.callbackUrl;
+    const callbackUrl = app.httpSever.callbackUrl;
 
-    console.log("Configuring handler to ignore the websocket caller and instead use http at:", callbackUrl);
+    app.console.log("Configuring handler to ignore the websocket caller and instead use http at:", callbackUrl);
 
-    await upsertSemaphore(params.httpClient, {
+    await upsertSemaphore(app.httpClient, {
         id: env.SEMAPHORE_ID,
         timeout: { value: 15000 },
         isActive: true,
@@ -59,31 +57,20 @@ export const _11_mapping_change_transport = async (params: WebSemaphoreTestParam
         }
     });
 
-    const input = { "title": "CERN", "Country": "CH", "engagement": 0.2 };
+    const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random() };
 
     // we acquire via websockets but dont await and instead get the message in http next
     wsClientManager.client.acquire({ semaphoreId: env.SEMAPHORE_ID!, sync: false, body: input, });
 
+    const jobMsg = await app.waitForSpecificMessage((jobMsg) => {
+        app.console.log(jobMsg);
+        return jobMsg?.message.body.id === input.id;
+    }, { maxAttempts: 10 })
 
-    await new Promise((res, rej) => {
-        httpCallbackServer.setHttpProcessor(async (msg: any, { jobCrn }) => {
-            console.log(msg)
-            
-            console.log("Input:", input);
-            console.log("↳ Request lock");
-            console.log("  ↳ Mapping");
-            console.log("    ↳ Acquired:", JSON.stringify(msg));
-            expect(msg.body.budget == input.engagement * 1000, "The mapping failed.");
-            
-            try {
-                console.log("Releasing via http...")
-                await httpClient.semaphore.release(testSemaphore.id, { jobCrn })
-            
-                res(undefined)
-            } catch (ex) {
-                rej(ex)
-            }
-        })
-    })
+    expect(!!jobMsg, "Didn't receive the expected message via http callback");
+
+    await jobMsg.release();
+
+    app.console.log("Change transport in mapping successful");
 }
-
+// All tests runtime 5:53

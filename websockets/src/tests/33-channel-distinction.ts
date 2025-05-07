@@ -8,17 +8,23 @@
     4. Release the job on the custom channel
 */
 
-import { Semaphore, SemaphoreJob } from "websemaphore/src";
-import { env, expect, upsertSemaphore, WebSemaphoreTestParams } from "./shared";
+import { SemaphoreJob } from "websemaphore/src";
+import { expect, upsertSemaphore } from "../../../lib/shared";
 import { _02_websockets_timeout } from "./02-websockets-timeout";
-import { _01_BasicTest } from "./01-websockets-basic";
+import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
-export const _33_channel_distinction = async (params: WebSemaphoreTestParams) => {
-    const { testSemaphore, wsClientManager, httpClient, httpCallbackServer } = params;
+export const _33_channel_distinction = async (app: WebsemaphreTestSetup) => {
+    const callbackUrl = app.httpSever.callbackUrl;
 
-    const callbackUrl = httpCallbackServer.callbackUrl;
+    app.console.log("Purging channelA")
+    await app.httpClient.semaphore.purgeQueue(app.testSemaphore.id, { channelId: "channelA" });
+    app.console.log("Purging channelB")
+    await app.httpClient.semaphore.purgeQueue(app.testSemaphore.id, { channelId: "channelB" });
 
-    await upsertSemaphore(params.httpClient, {
+    await app.httpClient.semaphore.activate(app.testSemaphore.id, { channelId: "channelA" });
+    await app.httpClient.semaphore.activate(app.testSemaphore.id, { channelId: "channelB" });
+
+    await upsertSemaphore(app.httpClient, {
         isActive: true,
         maxValue: 1,
         mapping: { isActive: false},
@@ -30,14 +36,18 @@ export const _33_channel_distinction = async (params: WebSemaphoreTestParams) =>
     const inputA = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random(), randomId: Math.random() };
     const inputB = { "title": "EU", "Country": "CH", "engagement": 0.3, id: Math.random(), randomId: Math.random() };
 
-    const jobMsgChA = await httpCallbackServer.acquire({ semaphoreId: testSemaphore.id, channelId: "channelA" }, inputA);
-    const jobMsgChB = await httpCallbackServer.acquire({ semaphoreId: testSemaphore.id, channelId: "channelB" }, inputB);
 
-    console.log("Job on channelA:", jobMsgChA.jobCrn);
-    console.log("Job on channelB:", jobMsgChB.jobCrn);
+    const jobMsgChA = await app.acquire({ semaphoreId: app.testSemaphore.id, channelId: "channelA" }, inputA);
+    const jobMsgChB = await app.acquire({ semaphoreId: app.testSemaphore.id, channelId: "channelB" }, inputB);
+
+    app.console.log("Job on channelA:", jobMsgChA.jobCrn);
+    app.console.log("Job on channelB:", jobMsgChB.jobCrn);
+
+    expect(SemaphoreJob.fromCrn(jobMsgChA.jobCrn).channel.id == "channelA", "Expected the message on channelA");
+    expect(SemaphoreJob.fromCrn(jobMsgChB.jobCrn).channel.id == "channelB", "Expected the message on channelB");
 
     await jobMsgChA.release();
     await jobMsgChB.release();
 
-    console.log("Job released on channelA and channelB");
+    app.console.log("Job released on channelA and channelB");
 }
