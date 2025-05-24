@@ -19,13 +19,16 @@ export const _34_channel_suspension = async (app: WebsemaphreTestSetup) => {
         isActive: true,
         maxValue: 1,
         mapping: { isActive: false },
-        routing: [
-            { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true, onError: "suspend-channel" }
-        ],
+        routing: {
+            routes: [
+                { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true, onError: "suspend-channel" }
+            ]
+        },
         // timeout: { value: 15000 }
     });
 
-    // await httpClient.semaphore.purgeQueue(testSemaphore.id); //, { channelId: "channelA" });
+    await httpClient.semaphore.purgeQueue(testSemaphore.id, { channelId: "channelA" });
+    await httpClient.semaphore.purgeQueue(testSemaphore.id, { channelId: "channelB" });
 
     app.console.log("Activating channelA");
     await httpClient.semaphore.activate(testSemaphore.id, { channelId: "channelA" });
@@ -54,8 +57,8 @@ export const _34_channel_suspension = async (app: WebsemaphreTestSetup) => {
     // channel B should be suspended because the first callbackUrl is not available
 
     // TODO: verify that channelB is suspended
- 
-    await new Promise(res => setTimeout(res, 1000));
+
+    await new Promise(res => setTimeout(res, 3000));
 
     const channelInfo = await app.httpClient.semaphore.readChannel(testSemaphore.id, { channelId: "channelB" });
     app.console.log("Channel info:", channelInfo.data);
@@ -67,9 +70,11 @@ export const _34_channel_suspension = async (app: WebsemaphreTestSetup) => {
         isActive: true,
         maxValue: 1,
         mapping: { isActive: false },
-        routing: [
-            { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true, onError: "suspend-channel" }
-        ]
+        routing: {
+            routes: [
+                { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true, onError: "suspend-channel" }
+            ]
+        }
     });
 
     await new Promise(res => setTimeout(res, 1000));

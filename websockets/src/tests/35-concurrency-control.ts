@@ -23,9 +23,11 @@ export const _35_concurrency_control = async (app: WebsemaphreTestSetup) => {
         isActive: true,
         maxValue: 3,
         mapping: { isActive: false },
-        routing: [
-            { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true }
-        ]
+        routing: {
+            routes: [
+                { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true }
+            ]
+        }
     });
 
     app.console.log("Step 1: Generating 5 messages");
@@ -37,7 +39,7 @@ export const _35_concurrency_control = async (app: WebsemaphreTestSetup) => {
 
     app.console.log("--- Step 2: Acquiring 3 messages");
     const [firstBatch, secondBatch] = [inputs.slice(0, 3), inputs.slice(3)];
-    
+
     await Promise.all(
         firstBatch.map((input) => app.acquire(testSemaphore.id, input, { waitForMessage: false }))
     );
@@ -46,7 +48,7 @@ export const _35_concurrency_control = async (app: WebsemaphreTestSetup) => {
     app.console.log("--- Step 3: Waiting for the first 3 messages to be acquired...");
     const firstBatchAcquired: { message: any; jobCrn: string; release: () => Promise<void>; }[] = [];
 
-    while(firstBatch.length) {
+    while (firstBatch.length) {
         const m = await app.waitForMessage(); // wait for the first 3 messages to be acquired
         firstBatch.splice(firstBatch.findIndex(i => i.id === m.message.id), 1);
         app.console.log("First batch: ", firstBatch.length, "messages left to acquire");
@@ -61,7 +63,7 @@ export const _35_concurrency_control = async (app: WebsemaphreTestSetup) => {
     app.console.log("--- Step 5: Verifying the last 2 messages are in 'scheduled' state");
     const queueItems = (await httpClient.semaphore.readQueue(testSemaphore.id, { status: "scheduled" })).data;
     app.console.log("Queue items: ", queueItems);
-   
+
     expect((queueItems as any)?.length === 2, "The last 2 messages should be in 'scheduled' state actual: " + (queueItems as any)?.length);
 
     app.console.log("--- Step 6: Releasing the first 3 messages");
@@ -70,7 +72,7 @@ export const _35_concurrency_control = async (app: WebsemaphreTestSetup) => {
     app.console.log("--- Step 7: Waiting for the last 2 messages to be acquired");
 
     const rp = [] as Promise<void>[];
-    while(secondBatch.length) {
+    while (secondBatch.length) {
         const m = await app.waitForMessage(); // wait for the first 3 messages to be acquired
         secondBatch.splice(firstBatch.findIndex(i => i.id === m.message.id), 1);
         app.console.log("First batch: ", firstBatch.length, "messages left to acquire");
@@ -83,9 +85,9 @@ export const _35_concurrency_control = async (app: WebsemaphreTestSetup) => {
 
     app.console.log("--- Step 8: Verifying all messages are in 'done' state");
     const allJobs = await httpClient.semaphore.readQueue(testSemaphore.id, { channelId: "default", status: "done" });
-    
+
     debugger;
-    
+
     expect(!(allJobs.data as any).find((j: { status: string }) => j.status != "done"), "Not all jobs are in 'done' state");
     app.console.log("Concurrency control test completed successfully");
 };

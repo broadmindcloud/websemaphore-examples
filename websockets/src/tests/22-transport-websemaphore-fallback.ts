@@ -21,11 +21,13 @@ const version = (semaphoreChannel: string, ver: "beta" | "v1") => ({
         websockets: { isActive: true },
     },
     v1: {
-        routing: [
-            { protocol: "websockets", isActive: true },
-            { protocol: "http", isActive: true, address: "intentionally-wrong-address", method: "POST" },
-            { protocol: "websemaphore", isActive: true, address: semaphoreChannel },
-        ],
+        routing: {
+            routes: [
+                { protocol: "websockets", isActive: true },
+                { protocol: "http", isActive: true, address: "intentionally-wrong-address", method: "POST" },
+                { protocol: "websemaphore", isActive: true, address: semaphoreChannel }
+            ]
+        }
     },
 }[ver]);
 
@@ -60,14 +62,16 @@ export const _22_transport_websemaphore_fallback = async (app: WebsemaphreTestSe
         mapping: {
             isActive: false
         },
-        routing: [
-            {
-                protocol: "http",
-                address: callbackUrl,
-                method: "POST",
-                isActive: true
-            }
-        ]
+        routing: {
+            routes: [
+                {
+                    protocol: "http",
+                    address: callbackUrl,
+                    method: "POST",
+                    isActive: true
+                }
+            ]
+        }
     });
 
     app.console.log("Purging ", env.SEMAPHORE_ID_FAILOVER);

@@ -27,10 +27,12 @@ export const _33_channel_distinction = async (app: WebsemaphreTestSetup) => {
     await upsertSemaphore(app.httpClient, {
         isActive: true,
         maxValue: 1,
-        mapping: { isActive: false},
-        routing: [
-            { protocol: "http", address: callbackUrl, method: "POST", isActive: true }
-        ]
+        mapping: { isActive: false },
+        routing: {
+            routes: [
+                { protocol: "http", address: callbackUrl, method: "POST", isActive: true }
+            ]
+        }
     });
 
     const inputA = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random(), randomId: Math.random() };

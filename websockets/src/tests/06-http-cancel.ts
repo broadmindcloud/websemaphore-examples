@@ -18,9 +18,11 @@ export const _06_http_cancel = async (app: WebsemaphreTestSetup) => {
         timeout: { value: 15000 },
         isActive: true,
         mapping: { isActive: false },
-        routing: [
-            { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true }
-        ]
+        routing: {
+            routes: [
+                { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true }
+            ]
+        }
     });
 
     await httpClient.semaphore.purgeQueue(testSemaphore.id, { channelId: "default" });

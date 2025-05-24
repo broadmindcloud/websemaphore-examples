@@ -21,16 +21,18 @@ export const _01_websockets_basic = async (
 
     app.console.log("Connecting to WebSemaphore over websockets...");
 
-    if(!opts?.skipConfig)
+    if (!opts?.skipConfig)
         upsertSemaphore(app.httpClient, {
             id: env.SEMAPHORE_ID,
             isActive: true,
             mapping: { isActive: false },
-            routing: [
-                { protocol: "websockets", isActive: true }
-            ]
+            routing: {
+                routes: [
+                    { protocol: "websockets", isActive: true }
+                ]
+            }
         });
-        
+
     const body = { some: "abstract", data: 10 };
 
     app.console.log(`Acquiring lock with ${JSON.stringify(body)}...`);

@@ -34,19 +34,21 @@ export const _10_mapping_basic = async (app: WebsemaphreTestSetup) => {
     debugger;
     await upsertSemaphore(app.httpClient, {
         id: app.testSemaphore.id,
-        timeout: { value: 15000 }, 
+        timeout: { value: 15000 },
         mapping: {
             handler,
             isActive: true,
             language: "javascript",
             maxExecutionTime: 1
         },
-        routing: [
-            {
-                protocol: "websockets",
-                isActive: true
-            }
-        ]
+        routing: {
+            routes: [
+                {
+                    protocol: "websockets",
+                    isActive: true
+                }
+            ]
+        }
     });
 
     const input = {

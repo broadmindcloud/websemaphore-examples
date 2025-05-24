@@ -30,9 +30,9 @@ export const setup = async (options?: { setDefaults?: boolean, purgeDefaultChann
 
     console.table(semaphores.data.Items);
 
-    const websemaphreTestSetup = await new WebsemaphreTestSetup({ console: {...console, log: (..._a) => undefined } }).start(); //{ current: await initHttpCallbackServer(httpClient) };
+    const websemaphreTestSetup = await new WebsemaphreTestSetup({ console: {...console } }).start(); //{ current: await initHttpCallbackServer(httpClient) };
 
-    if(options?.purgeDefaultChannel)
+    if(options?.purgeDefaultChannel) // , log: (..._a) => undefined
         await websemaphreTestSetup.httpClient.semaphore.purgeQueue(env.SEMAPHORE_ID, {});
 
     await websemaphreTestSetup.wsClientManager.connect(env.APIKEY_WORKER);

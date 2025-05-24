@@ -10,9 +10,17 @@ import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 export const _02_websockets_timeout = async (app: WebsemaphreTestSetup) => {
 
-    await upsertSemaphore(app.httpClient, { timeout: { value: 2000 }, isActive: true, routing: [{ protocol: "websockets", isActive: true }] });
+    await upsertSemaphore(
+        app.httpClient,
+        {
+            timeout: { value: 2000 },
+            isActive: true,
+            routing: {
+                routes: [{ protocol: "websockets", isActive: true }]
+            }
+        })
 
-    const { jobCrn: timedOutJobCrn, payload } = await _01_websockets_basic(app, { executionTimeSeconds: 25, skipConfig: true }) 
+    const { jobCrn: timedOutJobCrn, payload } = await _01_websockets_basic(app, { executionTimeSeconds: 25, skipConfig: true })
 
     const timedOutJob = (await app.httpClient.semaphore.readJob(app.testSemaphore.id!, { crn: timedOutJobCrn })).data;
 

@@ -17,12 +17,14 @@ export const _01_http_basic = async (
 
     const sem = await upsertSemaphore(app.httpClient, {
         id: testSemaphore.id,
-        timeout: { value: 15000 },
+        timeout: { value: 0 },
         isActive: true,
         mapping: { isActive: false },
-        routing: [
-            { protocol: "http", address: httpSever.callbackUrl, method: "POST", isActive: true }
-        ]
+        routing: {
+            routes: [
+                { protocol: "http", address: httpSever.callbackUrl, method: "POST", isActive: true }
+            ]
+        }
     });
 
     const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random(), randomId: Math.random() };
@@ -34,7 +36,7 @@ export const _01_http_basic = async (
     app.console.log("Input:", JSON.stringify(input), "↳ Request lock", "   ↳ Acquired:", JSON.stringify(jobMsg.message));
     expect(input.id == jobMsg.message.id, "Unexpected message")
 
-    app.console.log("Awaiting processing and release")
+    app.console.log("Awaiting processing and release");
 
     await jobMsg.release();
 

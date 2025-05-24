@@ -17,7 +17,9 @@ export const _02_http_timeout = async (
         timeout: { value: 2000 },
         isActive: true,
         mapping: { isActive: false },
-        routing: [ { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true } ]
+        routing: {
+            routes: [ { protocol: "http", address: app.httpSever.callbackUrl, method: "POST", isActive: true } ]
+        }
     });
 
     const input = { "title": "CERN", "Country": "CH", "engagement": 0.2, id: Math.random(), randomId: Math.random() };
@@ -29,7 +31,7 @@ export const _02_http_timeout = async (
     app.console.log("Input:", JSON.stringify(input), "↳ Request lock", "   ↳ Acquired:", JSON.stringify(timedOutJobMsg.message));
     
     app.console.log("Waiting for timeout to kick in")
-    await new Promise(res => setTimeout(res, 20000));
+    await new Promise(res => setTimeout(res, 25000));
 
     const timedOutJob = (await app.httpClient.semaphore.readJob(app.testSemaphore.id!, { crn: timedOutJobMsg.jobCrn })).data;
 

@@ -15,14 +15,16 @@ import { WebsemaphreTestSetup } from "../../../lib/WebsemaphreTestSetup";
 
 const version = (callbackUrl: string, ver: "beta" | "v1") => ({
     beta: {
-        callback:   { address: callbackUrl, isActive: true, method: "POST", protocol: "http" },
+        callback: { address: callbackUrl, isActive: true, method: "POST", protocol: "http" },
         websockets: { isActive: true }
     },
     v1: {
-        routing: [
-            { protocol: "websockets", isActive: true,                                      },
-            { protocol: "http",       isActive: true, address: callbackUrl, method: "POST" }
-        ]
+        routing: {
+            routes: [
+                { protocol: "websockets", isActive: true, },
+                { protocol: "http", isActive: true, address: callbackUrl, method: "POST" }
+            ]
+        }
     }
 }[ver]);
 
@@ -49,17 +51,17 @@ export const _21_transport_http_fallback = async (app: WebsemaphreTestSetup) => 
     const ap = wsClientManager.wsClient.send({
         action: "lock.acquire",
         payload: JSON.stringify({
-          id: input.id,
-          body: input,
+            id: input.id,
+            body: input,
         }),
         semaphoreId: app.testSemaphore.id
-      });
+    });
 
     await wsClientManager.disconnect();
 
     const jobMsg = await app.waitForSpecificMessage(
         (jobMsg) => jobMsg?.message.body.id === input.id,
-    { maxAttempts: 10, input });
+        { maxAttempts: 10, input });
 
     expect(!!jobMsg, "Didn't receive the expected message via http callback");
 

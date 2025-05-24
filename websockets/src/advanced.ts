@@ -56,11 +56,17 @@ const ALL_TESTS: Record<string, (...p: Parameters<typeof _01_websockets_basic>) 
     _33_channel_distinction,
     _34_channel_suspension,
     _35_concurrency_control
+    
 }
 
 Object.keys(ALL_TESTS);
 const TESTS: typeof ALL_TESTS = { 
     ...ALL_TESTS,
+    // _33_channel_distinction,
+    // _01_http_basic,
+    // _21_transport_http_fallback,
+
+    // _34_channel_suspension
 }
 
 
